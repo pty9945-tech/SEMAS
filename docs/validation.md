@@ -1,3 +1,18 @@
+# 공개형 전환 후 검증
+
+사용자의 최신 요청에 따라 로그인·초대 없이 누구나 이용하는 정적 사이트를 기본으로 전환했다.
+
+- 공개형 프로덕션 빌드 성공.
+- 공개형 Chromium 검사 **5개 통과**: 즉시 상담 진입, 정상·복수 후보, 이전 답 수정, 폐업·모름, 복사·인쇄, 모바일, `/SEMAS/` 하위 경로.
+- 브라우저 네트워크 검사에서 상담 API 요청 **0건**. 쿠키·localStorage·sessionStorage·URL에 상담 데이터 없음.
+- 기존 비공개형 Chromium 검사 **6개 통과** (`npm run test:e2e:private`).
+- GitHub Pages 게시 성공: [실행 기록](https://github.com/pty9945-tech/SEMAS/actions/runs/38739078085).
+- 실제 HTTPS 사이트에 대한 동일한 공개 브라우저 검사는 GitHub Actions `Verify public consultation site`에서 실행한다.
+
+아래는 같은 정책·인증 엔진에 대한 기존 상세 검증 기록이다. 이전 서버의 SMTP·호스팅 미연결 항목은 비공개 서버에 대한 당시 상태이며 현재 공개 사이트의 배포 상태를 나타내지 않는다.
+
+---
+
 # 검증 결과
 
 검증일: **2026-10-15 (한국 시간)**. Node.js 24.19.0, React 19.3.0, Vite 8.3.4, Chromium 154 / Playwright 1.64.0.
