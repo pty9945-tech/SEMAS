@@ -13,7 +13,7 @@ const { app, close } = await createApp({
   adminEmail: 'owner@example.test',
   origin: 'http://127.0.0.1:3100',
   secureCookies: false,
-  staticDir: resolve('dist'),
+  staticDir: resolve('dist-private'),
   mailer: async ({ to, code }) => {
     const key = createHash('sha256').update(to).digest('hex');
     await writeFile(resolve(directory, 'mail', `${key}.json`), JSON.stringify({ code }), { mode: 0o600 });

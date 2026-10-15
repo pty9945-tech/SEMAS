@@ -1,0 +1,30 @@
+name: Verify public consultation site
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Select browser
+        shell: bash
+        run: |
+          if command -v google-chrome >/dev/null; then
+            echo "PLAYWRIGHT_CHROMIUM_EXECUTABLE=$(command -v google-chrome)" >> "$GITHUB_ENV"
+          else
+            npx playwright install --with-deps chromium
+          fi
+      - name: Check the deployed HTTPS site
+        run: npm run test:e2e
+        env:
+          LIVE_SITE_URL: https://pty9945-tech.github.io/SEMAS/

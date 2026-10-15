@@ -1,6 +1,7 @@
 .git
 node_modules
 dist
+dist-private
 .env
 .env.*
 test-results

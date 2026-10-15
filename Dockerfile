@@ -5,7 +5,7 @@ RUN --mount=type=secret,id=build_ca \
     if [ -f /run/secrets/build_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/build_ca; fi; npm ci
 COPY index.html vite.config.js ./
 COPY src ./src
-RUN npm run build
+RUN npm run build:private
 
 FROM node:24.19.0-bookworm-slim AS runtime
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000 DATA_DIR=/data
@@ -14,7 +14,7 @@ COPY --chown=node:node package.json package-lock.json .npmrc ./
 RUN --mount=type=secret,id=build_ca \
     if [ -f /run/secrets/build_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/build_ca; fi; \
     npm ci --omit=dev && npm cache clean --force && mkdir /data && chown node:node /data
-COPY --from=build --chown=node:node /app/dist ./dist
+COPY --from=build --chown=node:node /app/dist-private ./dist
 COPY --chown=node:node server ./server
 COPY --chown=node:node policy ./policy
 USER node

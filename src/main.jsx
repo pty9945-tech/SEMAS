@@ -155,7 +155,12 @@ const REASON_LABELS = {
   unanswered: "미확인",
 };
 const DEFAULT_NOTICE = "2026년 제공 자료 기준 · 접수 현황 별도 확인";
+const PUBLIC_SITE = __PUBLIC_SITE__;
 async function request(path, options = {}) {
+  if (PUBLIC_SITE) {
+    const { publicRequest } = await import('./public-api.js');
+    return publicRequest(path, options);
+  }
   const response = await fetch(path, {
     credentials: "same-origin",
     cache: "no-store",
@@ -1278,7 +1283,7 @@ function App() {
     return data.user;
   }, [api, resetSession]);
   useEffect(() => {
-    if (!user) return;
+    if (!user || PUBLIC_SITE) return;
     const check = () =>
       checkSession().catch((err) => {
         if (![401, 403].includes(err.status))
@@ -1436,7 +1441,7 @@ function App() {
               상담하기
             </button>
             <button onClick={() => setGuide(true)}>이용 안내</button>
-            {user.role === "admin" && (
+            {!PUBLIC_SITE && user.role === "admin" && (
               <button
                 className={tab === "admin" ? "active" : ""}
                 onClick={() => setTab("admin")}
@@ -1445,7 +1450,11 @@ function App() {
               </button>
             )}
           </nav>
-          <div className="user-menu">
+          {PUBLIC_SITE ? (
+            <span className="public-access-label">
+              <Icon name="leaf" size={16} /> 로그인 없이 바로 상담
+            </span>
+          ) : <div className="user-menu">
             <span className="user-avatar">
               <Icon name="person" size={17} />
             </span>
@@ -1461,7 +1470,7 @@ function App() {
             >
               <Icon name="logout" size={18} />
             </button>
-          </div>
+          </div>}
         </div>
       </header>
       <main className="app-main" id="main-content">
@@ -1676,7 +1685,7 @@ function App() {
               <li>
                 <strong>결과를 확인하고 필요한 내용을 이어가세요.</strong>
                 <p>
-                  결과를 복사하거나 인쇄할 수 있어요. 새로고침 또는 로그아웃하면
+                  결과를 복사하거나 인쇄할 수 있어요. 새로고침{PUBLIC_SITE ? "하면" : " 또는 로그아웃하면"}
                   상담 내용은 사라져요.
                 </p>
               </li>

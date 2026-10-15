@@ -2892,3 +2892,15 @@ form label:not(:first-child) {
     top: 18px;
   }
 }
+.public-access-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #317464;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+@media (max-width: 600px) {
+  .public-access-label { display: none; }
+}
