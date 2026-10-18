@@ -224,6 +224,24 @@ function PolicyNotice({ meta }) {
     </div>
   );
 }
+function AssumptionNotice({ meta }) {
+  if (!meta?.assumptionNotice) return null;
+  return (
+    <aside className="assumption-notice" aria-label="상담 전제" data-testid="assumption-notice">
+      <Icon name="info" size={18} />
+      <div>
+        <strong>상담 전제 · 소상공인 기본요건 충족</strong>
+        <p>{meta.assumptionNotice} {meta.assumptionDetails}</p>
+        {meta.assumedRequirements?.length > 0 && (
+          <details className="assumption-details">
+            <summary>가정한 기본요건 보기</summary>
+            <ul>{meta.assumedRequirements.map((item) => <li key={item}>{item}</li>)}</ul>
+          </details>
+        )}
+      </div>
+    </aside>
+  );
+}
 function Login({ onLogin, notice }) {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -937,6 +955,7 @@ function Results({ evaluation, catalog, onCopy, onPrint, onRestart, busy }) {
           </button>
         </div>
       </div>
+      <AssumptionNotice meta={catalog.meta} />
       <div className="result-warning">
         <Icon name="info" size={18} />
         <div>
@@ -1161,6 +1180,13 @@ function resultText(evaluation, catalog) {
     catalog.meta.notice || DEFAULT_NOTICE,
     catalog.meta.coverage || "",
     `적용 연도: ${catalog.meta.year || "미확인"} / 자료 확인일: ${catalog.meta.verifiedAt || "미확인"}`,
+    ...(catalog.meta.assumptionNotice ? [
+      "",
+      "상담 전제 · 소상공인 기본요건 충족 (별도 확인한 답변이 아닌 가정)",
+      catalog.meta.assumptionNotice,
+      catalog.meta.assumptionDetails || "",
+      ...(catalog.meta.assumedRequirements || []).map((item) => `- 가정한 요건: ${item}`),
+    ] : []),
     "",
     "선택한 내용",
     ...evaluation.answered.map((a) => `- ${a.title}: ${a.answerLabel}`),
@@ -1420,11 +1446,11 @@ function App() {
     );
   if (!user) return <Login onLogin={initialize} notice={notice} />;
   const answeredCount = evaluation?.answered.length || 0;
-  const commonStage = evaluation?.nextQuestion?.stage === "공통 조건" ||
-    (evaluation?.nextQuestion?.stage === "추가 확인" &&
-      !evaluation?.answered.some((answer) =>
-        ["자금 목적", "자금별 확인"].includes(catalog?.questions?.find((question) => question.id === answer.questionId)?.stage),
-      ));
+  const nextQuestion = evaluation?.nextQuestion;
+  const workflowStage = evaluation?.complete ? 3
+    : nextQuestion?.stage === "자금 목적" || ["purpose", "purposeConfirm"].includes(nextQuestion?.id) ? 0
+    : nextQuestion?.stage === "공통 조건" || nextQuestion?.id === "businessStatusConfirm" ? 1
+    : 2;
   return (
     <>
       <a className="skip-link" href="#main-content">
@@ -1508,7 +1534,7 @@ function App() {
                     "상담 결과를 정리했어요."
                   ) : (
                     <>
-                      사장님의 상황부터
+                      필요한 자금부터
                       <br className="mobile-break" /> 살펴볼까요?
                     </>
                   )}
@@ -1544,23 +1570,17 @@ function App() {
             ) : (
               <>
                 <div className="workflow-strip" aria-label="상담 진행 단계">
-                  <div
-                    className={`workflow-step ${!evaluation.complete && commonStage ? "current" : "done"}`}
-                  >
-                    <span>1</span>공통 조건 확인
-                  </div>
-                  <div className="workflow-divider" />
-                  <div
-                    className={`workflow-step ${!evaluation.complete && !commonStage ? "current" : evaluation.complete ? "done" : ""}`}
-                  >
-                    <span>2</span>자금별 조건 확인
-                  </div>
-                  <div className="workflow-divider" />
-                  <div
-                    className={`workflow-step ${evaluation.complete ? "current" : ""}`}
-                  >
-                    <span>3</span>상담 결과
-                  </div>
+                  {["자금 목적", "공통 확인", "자금별 확인", "상담 결과"].map((label, index) => (
+                    <React.Fragment key={label}>
+                      {index > 0 && <div className="workflow-divider" />}
+                      <div
+                        className={`workflow-step ${workflowStage === index ? "current" : workflowStage > index ? "done" : ""}`}
+                        aria-current={workflowStage === index ? "step" : undefined}
+                      >
+                        <span>{index + 1}</span>{label}
+                      </div>
+                    </React.Fragment>
+                  ))}
                   <div className="answer-progress">
                     {answeredCount}개 답변 완료
                   </div>
@@ -1578,6 +1598,7 @@ function App() {
                       />
                     ) : (
                       <>
+                        <AssumptionNotice meta={catalog.meta} />
                         <Question
                           evaluation={evaluation}
                           draft={draft}

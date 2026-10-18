@@ -6,14 +6,15 @@ import { resolve } from 'node:path';
 const adminEmail = 'owner@example.test';
 const mailPath = (email) => resolve('.data/e2e/mail', `${createHash('sha256').update(email).digest('hex')}.json`);
 let adminState;
+const assumedQuestionIds = ['employees', 'industry', 'smallEnterprise', 'retainedStatus', 'businessForm'];
+const assumptionNotice = '소상공인 기본요건 충족을 전제로 상담합니다.';
 
 // The fixture supplies answers, never eligibility decisions. Every subsequent
 // question comes from the real /api/evaluate response and is clicked in the UI.
 const baseline = {
-  businessStatus: 'active', employees: 'under5', industry: 'other',
-  smallEnterprise: 'yes', retainedStatus: 'no', businessForm: 'eligible',
+  purpose: ['operations'], businessStatus: 'active',
   exclusionStatus: 'clear', taxStatus: 'clear', delinquency: 'clear',
-  directRecentDelinquency: 'clear', purpose: ['operations'],
+  directRecentDelinquency: 'clear',
   agencyRestrictions: 'clear', directRestrictions: 'clear', loanHistory: 'clear',
   generalFrequency: 'clear', disabledProof: 'no', disabledDetails: 'no',
   businessAge: 'from3To7', ownerAge: 'fortyPlus', youthEmployment: 'none',
@@ -52,6 +53,7 @@ async function walk(page, overrides = {}, { result = null, stopBefore = null } =
   const visited = new Set();
   for (let index = 0; !current.complete && index < 60; index += 1) {
     const questionId = current.nextQuestion.id;
+    expect(assumedQuestionIds, `basic eligibility must be assumed: ${questionId}`).not.toContain(questionId);
     if (questionId === stopBefore) return current;
     expect(visited.has(questionId), `question repeated: ${questionId}`).toBe(false);
     visited.add(questionId);
@@ -65,7 +67,7 @@ async function walk(page, overrides = {}, { result = null, stopBefore = null } =
 
 async function restart(page) {
   await page.getByRole('button', { name: '다시 상담하기', exact: true }).first().click();
-  await expect(page.getByTestId('question-card')).toHaveAttribute('data-question-id', 'businessStatus');
+  await expect(page.getByTestId('question-card')).toHaveAttribute('data-question-id', 'purpose');
 }
 
 test.beforeAll(async ({ browser }) => {
@@ -93,12 +95,12 @@ test('normal consultation, copy, print, no answer persistence and retained login
   const questionReference = page.getByTestId('question-reference');
   await questionReference.locator('summary').click();
   await expect(questionReference).toContainText('운용지침');
-  const smallEnterprise = await walk(page, {}, { stopBefore: 'smallEnterprise' });
+  await expect(page.getByTestId('assumption-notice').first()).toBeVisible();
+  const pending = await walk(page, {}, { stopBefore: 'directRestrictions' });
   await expect(questionReference).not.toHaveAttribute('open');
   await questionReference.locator('summary').click();
-  await expect(questionReference).toContainText('평균매출액');
-  await expect(questionReference).toContainText('억원 이하');
-  const result = await walk(page, {}, { result: smallEnterprise });
+  await expect(questionReference).toContainText('대출제한대상');
+  const result = await walk(page, {}, { result: pending });
   expect(result.complete).toBe(true);
   expect(result.candidates.filter((fund) => fund.status !== 'ineligible').map((fund) => fund.id)).toEqual(['general']);
   await expect(page.getByTestId('results')).toBeVisible();
@@ -108,6 +110,8 @@ test('normal consultation, copy, print, no answer persistence and retained login
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain('일반경영안정자금');
   const copied = await page.evaluate(() => navigator.clipboard.readText());
   expect(copied).toContain('2026');
+  expect(copied).toContain(assumptionNotice);
+  await expect(page.getByTestId('results')).toContainText(assumptionNotice);
   expect(copied).toContain('영업 중');
   expect(copied).toContain('추가 안내:');
   expect(copied).toContain('현재 접수 확인 필요');
@@ -128,7 +132,7 @@ test('normal consultation, copy, print, no answer persistence and retained login
   const storage = await page.evaluate(() => ({ local: Object.keys(localStorage), session: Object.keys(sessionStorage), search: location.search, hash: location.hash }));
   expect(storage).toEqual({ local: [], session: [], search: '', hash: '' });
   await page.reload();
-  await expect(page.getByTestId('question-card')).toHaveAttribute('data-question-id', 'businessStatus');
+  await expect(page.getByTestId('question-card')).toHaveAttribute('data-question-id', 'purpose');
   expect(errors).toEqual([]);
 });
 
@@ -157,20 +161,20 @@ test('multiple candidates and revising a prior answer recalculate the downstream
 });
 
 test('no candidates, unknown follow-up, and exclusive multi-select unknown', async ({ page }) => {
+  await choose(page, 'purpose', ['operations']);
   const none = await choose(page, 'businessStatus', 'closed');
   expect(none.complete).toBe(true);
   expect(none.candidates.every((fund) => fund.status === 'ineligible')).toBe(true);
   await expect(page.getByTestId('results')).toBeVisible();
   await restart(page);
-  await choose(page, 'businessStatus', 'unknown');
-  const pending = await choose(page, 'businessStatusConfirm', 'unknown');
-  await walk(page, {}, { result: pending, stopBefore: 'purpose' });
   // Choosing unknown clears the known purpose in the browser as well as server.
   await page.getByTestId('option-operations').click();
   const unknown = await choose(page, 'purpose', ['unknown']);
   expect(unknown.answers.purpose).toEqual(['unknown']);
   expect(unknown.nextQuestion.id).toBe('purposeConfirm');
-  const confirmed = await choose(page, 'purposeConfirm', ['operations']);
+  await choose(page, 'purposeConfirm', ['operations']);
+  await choose(page, 'businessStatus', 'unknown');
+  const confirmed = await choose(page, 'businessStatusConfirm', 'unknown');
   const result = await walk(page, {}, { result: confirmed });
   expect(result.candidates.find((fund) => fund.id === 'general').status).toBe('needs_info');
   await expect(page.getByTestId('results')).toContainText('추가 확인 필요');
@@ -216,6 +220,7 @@ test('mobile layout fits screen and supports keyboard selection through results'
   await expect(page.getByTestId('question-card')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: 'artifacts/mobile.png', fullPage: true });
+  await choose(page, 'purpose', ['operations']);
   await page.getByTestId('option-closed').focus();
   await page.keyboard.press('Enter');
   await page.getByTestId('next-button').click();

@@ -1,15 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { catalog, conditions, questionFlow } from '../policy/catalog.js';
-import { classifyEmployees, evaluateAnswers, normalizeAnswers } from '../policy/engine.js';
+import { evaluateAnswers, normalizeAnswers } from '../policy/engine.js';
 
 // Each answer is supplied only when the engine actually requests its question.
 // This exercises adaptive paths rather than assuming a static form order.
 const baseline = {
-  businessStatus: 'active', employees: 'under5', industry: 'other',
-  smallEnterprise: 'yes', retainedStatus: 'no', businessForm: 'eligible',
+  purpose: ['operations'], businessStatus: 'active',
   exclusionStatus: 'clear', taxStatus: 'clear', delinquency: 'clear',
-  directRecentDelinquency: 'clear', purpose: ['operations'],
+  directRecentDelinquency: 'clear',
   agencyRestrictions: 'clear', directRestrictions: 'clear', loanHistory: 'clear',
   generalFrequency: 'clear', disabledProof: 'no', disabledDetails: 'no',
   businessAge: 'from3To7', ownerAge: 'fortyPlus', youthEmployment: 'none',
@@ -19,11 +18,14 @@ const baseline = {
   innovationPaths: ['none'], graduationVerified: 'no', academyRestrictions: 'clear', investment: 'no', restartPaths: ['none'], restartVerified: 'no',
 };
 
+const assumedQuestionIds = ['employees', 'industry', 'smallEnterprise', 'retainedStatus', 'businessForm'];
+
 function walk(overrides = {}, fillUnknown = false) {
   let result = evaluateAnswers();
   const visited = new Set();
   for (let index = 0; !result.complete && index < catalog.questions.length + 2; index += 1) {
     const question = result.nextQuestion;
+    assert.ok(!assumedQuestionIds.includes(question.id), `basic eligibility must be assumed: ${question.id}`);
     assert.ok(!visited.has(question.id), `question repeated: ${question.id}`);
     visited.add(question.id);
     const value = Object.hasOwn(overrides, question.id) ? overrides[question.id]
@@ -65,9 +67,9 @@ test('catalog conditions and adaptive flow reference real source-linked question
   for (const fund of catalog.funds) for (const id of fund.conditionIds) assert.ok(conditions[id], `${fund.id}: ${id}`);
 });
 
-test('empty consultation starts with business status and retains all candidates', () => {
+test('empty consultation starts with funding purpose and retains all candidates', () => {
   const result = evaluateAnswers();
-  assert.equal(result.nextQuestion.id, 'businessStatus');
+  assert.equal(result.nextQuestion.id, 'purpose');
   assert.equal(result.complete, false);
   assert.deepEqual(result.answers, {});
   assert.equal(viable(result).length, catalog.funds.length);
@@ -76,7 +78,7 @@ test('empty consultation starts with business status and retains all candidates'
 test('closed business ends without asking irrelevant downstream questions', () => {
   const result = evaluateAnswers({ businessStatus: 'closed', purpose: ['operations'], employees: 'under5' });
   assert.equal(result.complete, true);
-  assert.deepEqual(result.answers, { businessStatus: 'closed' });
+  assert.deepEqual(result.answers, { purpose: ['operations'], businessStatus: 'closed' });
   assert.equal(viable(result).length, 0);
   assert.ok(result.candidates.every((fund) => fund.reasons.some((reason) => reason.status === 'failed')));
 });
@@ -90,7 +92,7 @@ test('unknown answers reach a result with additional checks and never fabricate 
 });
 
 test('unknown business status asks one confirmation and records the answer actually used', () => {
-  const pending = evaluateAnswers({ businessStatus: 'unknown' });
+  const pending = evaluateAnswers({ purpose: ['operations'], businessStatus: 'unknown' });
   assert.equal(pending.nextQuestion.id, 'businessStatusConfirm');
   const result = walk({ businessStatus: 'unknown', businessStatusConfirm: 'active' });
   const matching = result.candidates.flatMap((fund) => fund.reasons).filter((reason) => reason.questionIds.includes('businessStatusConfirm'));
@@ -103,24 +105,26 @@ test('changing a common answer recalculates all candidates and removes stale lat
   assert.ok(Object.keys(before.answers).length > 1);
   const changed = evaluateAnswers({ ...before.answers, businessStatus: 'closed' });
   assert.equal(viable(changed).length, 0);
-  assert.deepEqual(changed.answers, { businessStatus: 'closed' });
+  assert.deepEqual(changed.answers, { purpose: ['operations'], businessStatus: 'closed' });
 });
 
 test('newly required confirmation clears all answers after the missing step', () => {
   const before = walk();
   const changed = evaluateAnswers({ ...before.answers, businessStatus: 'unknown' });
   assert.equal(changed.nextQuestion.id, 'businessStatusConfirm');
-  assert.deepEqual(changed.answers, { businessStatus: 'unknown' });
+  assert.deepEqual(changed.answers, { purpose: ['operations'], businessStatus: 'unknown' });
 });
 
 test('invalid values, personal fields and injected shapes do not enter consultation state', () => {
   for (const invalid of [null, [], 'active', 4]) assert.deepEqual(normalizeAnswers(invalid), {});
-  assert.deepEqual(normalizeAnswers({ businessStatus: ['active'] }), {});
-  assert.deepEqual(normalizeAnswers({ businessStatus: 'unrecognized' }), {});
+  assert.deepEqual(normalizeAnswers({ purpose: 'operations', businessStatus: 'active' }), {});
+  assert.deepEqual(normalizeAnswers({ purpose: ['unrecognized'] }), {});
+  assert.deepEqual(normalizeAnswers({ purpose: ['operations'], businessStatus: ['active'] }), { purpose: ['operations'] });
+  assert.deepEqual(normalizeAnswers({ purpose: ['operations'], businessStatus: 'unrecognized' }), { purpose: ['operations'] });
   const before = walk();
   const withPersonal = normalizeAnswers({ ...before.answers, personalName: 'discard', phone: 'discard', businessRegistration: 'discard' });
   assert.deepEqual(withPersonal, before.answers);
-  assert.deepEqual(normalizeAnswers({ businessStatus: 'active', employees: ['under5'], purpose: ['operations'] }), { businessStatus: 'active' });
+  assert.deepEqual(normalizeAnswers({ businessStatus: 'active', employees: ['under5'], purpose: ['operations'] }), { purpose: ['operations'], businessStatus: 'active' });
 });
 
 test('source metadata reports the uploaded 2026 documents without claiming live applications', () => {
@@ -166,23 +170,45 @@ test('youth owner path excludes age 40 and business age 3 years, while hiring is
     const result = walk({ businessAge, ownerAge });
     assert.equal(fundByName(result, '청년고용연계자금').status, expected, `${businessAge}/${ownerAge}`);
   }
+  const noEmployment = walk({ businessAge: 'sevenPlus', ownerAge: 'fortyPlus', youthEmployment: 'none' });
+  assert.equal(noEmployment.answers.youthEmployment, 'none');
+  assert.equal(fundByName(noEmployment, '청년고용연계자금').status, 'ineligible');
   for (const youthEmployment of ['majority', 'recent']) {
     const result = walk({ businessAge: 'sevenPlus', ownerAge: 'fortyPlus', youthEmployment });
+    assert.equal(result.answers.youthEmployment, youthEmployment);
     assert.equal(fundByName(result, '청년고용연계자금').status, 'reviewing');
   }
   const ownerPath = walk({ businessAge: 'from2To3', ownerAge: 'under40' });
   assert.equal(ownerPath.answers.youthEmployment, undefined, 'met owner branch prunes an unnecessary employment question');
 });
 
-test('employee 5/10 thresholds and 20-person retained-status cap are distinct', () => {
-  for (const [industry, count, retainedStatus, expected] of [
-    ['other', 4.5, 'no', 'reviewing'], ['other', 5, 'no', 'ineligible'],
-    ['labor10', 9.5, 'no', 'reviewing'], ['labor10', 10, 'no', 'ineligible'],
-    ['other', 19, 'yes', 'reviewing'], ['labor10', 20, 'yes', 'ineligible'],
-  ]) {
-    const result = walk({ industry, employees: classifyEmployees(count), retainedStatus });
-    assert.equal(fundByName(result, '일반경영안정자금').status, expected, `${industry}/${count}/${retainedStatus}`);
+test('basic small-business eligibility is an explicit assumption, never a requested answer', () => {
+  assert.match(catalog.meta.assumptionNotice, /소상공인 기본요건 충족을 전제로 상담합니다/);
+  assert.ok(Array.isArray(catalog.meta.assumedRequirements) && catalog.meta.assumedRequirements.length > 0);
+  for (const id of assumedQuestionIds) {
+    assert.ok(!catalog.questions.some((question) => question.id === id), id);
+    assert.ok(!questionFlow.some((step) => step.questionId === id), id);
   }
+  for (const id of ['SIZE-EMP', 'SIZE-REV', 'FORM']) assert.equal(conditions[id], undefined, id);
+  const before = walk();
+  const changed = evaluateAnswers({
+    ...before.answers,
+    employees: 'twentyPlus', industry: 'other', smallEnterprise: 'no',
+    retainedStatus: 'no', businessForm: 'excluded',
+  });
+  assert.deepEqual(changed, before, 'old basic-eligibility answers cannot affect candidates or summaries');
+  assert.ok(assumedQuestionIds.every((id) => !Object.hasOwn(changed.answers, id)));
+});
+
+test('purpose clarification precedes remaining conditions and a purpose edit clears its later path', () => {
+  const pending = evaluateAnswers({ purpose: ['unknown'] });
+  assert.equal(pending.nextQuestion.id, 'purposeConfirm');
+  const confirmed = evaluateAnswers({ purpose: ['unknown'], purposeConfirm: ['operations'] });
+  assert.equal(confirmed.nextQuestion.id, 'businessStatus');
+  const changed = evaluateAnswers({ purpose: ['equipment'], employees: 'twentyPlus', smallEnterprise: 'no' });
+  assert.deepEqual(changed.answers, { purpose: ['equipment'] });
+  assert.equal(changed.nextQuestion.id, 'businessStatus');
+  assert.equal(changed.candidates.find((fund) => fund.id === 'general').status, 'ineligible');
 });
 
 test('NCB 839/840 and 90-day boundary affect credit-vulnerable funding', () => {
@@ -198,7 +224,10 @@ test('NCB 839/840 and 90-day boundary affect credit-vulnerable funding', () => {
 test('credit grade 9/10 revenue boundary is different from personal credit score', () => {
   const qualifying = { businessAge: 'from90To2', creditScore: 'upTo839', creditEducation: 'yes', creditGrade: 'nineToTen' };
   assert.equal(fundByName(walk({ ...qualifying, annualRevenue: 'from104To197m' }), '신용취약소상공인자금').status, 'ineligible');
-  assert.equal(fundByName(walk({ ...qualifying, annualRevenue: 'atLeast197m' }), '신용취약소상공인자금').status, 'reviewing');
+  const confirmed = walk({ ...qualifying, annualRevenue: 'atLeast197m' });
+  assert.equal(confirmed.answers.creditGrade, 'nineToTen');
+  assert.equal(confirmed.answers.annualRevenue, 'atLeast197m');
+  assert.equal(fundByName(confirmed, '신용취약소상공인자금').status, 'reviewing');
 });
 
 test('refinance-only purpose never invents an unattached refinancing program', () => {
@@ -206,10 +235,14 @@ test('refinance-only purpose never invents an unattached refinancing program', (
   assert.equal(viable(result).length, 0);
 });
 
-test('a matched purpose skips an unnecessary follow-up; other-only asks for clarification', () => {
-  const result = walk({ purpose: ['operations', 'other'], purposeConfirm: ['unknown'] });
-  assert.equal(fundByName(result, '일반경영안정자금').status, 'reviewing');
-  assert.equal(result.answers.purposeConfirm, undefined);
+test('known purposes skip clarification while unspecified additional purposes are checked without losing known matches', () => {
+  const known = walk({ purpose: ['operations'] });
+  assert.equal(known.answers.purposeConfirm, undefined);
+  const pending = evaluateAnswers({ purpose: ['operations', 'other'] });
+  assert.equal(pending.nextQuestion.id, 'purposeConfirm');
+  const mixed = walk({ purpose: ['operations', 'other'], purposeConfirm: ['unknown'] });
+  assert.equal(fundByName(mixed, '일반경영안정자금').status, 'reviewing');
+  assert.deepEqual(mixed.answers.purposeConfirm, ['unknown']);
   const unresolved = walk({ purpose: ['other'], purposeConfirm: ['unknown'] });
   assert.deepEqual(unresolved.answers.purposeConfirm, ['unknown']);
   assert.equal(fundByName(unresolved, '일반경영안정자금').status, 'needs_info');
@@ -234,7 +267,9 @@ test('normalization is deterministic, idempotent and does not mutate the request
 test('temporary difficulty preserves agency route at direct revenue and seven-year boundaries', () => {
   const base = { salesDrop:'atLeast15', annualRevenue:'under104m', businessAge:'from3To7' };
   const status=(result,id)=>result.candidates.find(f=>f.id===id).status;
-  assert.equal(status(walk(base),'temporary-direct'),'reviewing');
+  const confirmed = walk(base);
+  assert.equal(confirmed.answers.annualRevenue, 'under104m');
+  assert.equal(status(confirmed,'temporary-direct'),'reviewing');
   assert.equal(status(walk(base),'temporary-agency'),'reviewing');
   for(const change of [{annualRevenue:'from104To197m'},{businessAge:'sevenPlus'}]) {
     const result=walk({...base,...change});
@@ -265,12 +300,19 @@ test('academy facility exclusion and route-specific restrictions leave other inn
   assert.equal(alternative.answers.academyRestrictions,undefined);
 });
 
-test('graduation path excludes retained-size businesses without eliminating other innovation routes', () => {
-  const status=result=>result.candidates.find(f=>f.id==='innovation').status;
-  const retained={employees:'tenToNineteen',retainedStatus:'yes',innovationPaths:['graduation'],graduationVerified:'yes'};
-  assert.equal(status(walk(retained)),'ineligible');
-  assert.equal(status(walk({...retained,innovationPaths:['graduation','export']})),'reviewing');
-  assert.equal(status(walk({innovationPaths:['graduation'],graduationVerified:'unknown'})),'needs_info');
+test('graduation-specific revenue, employee band and retained-status verification remains required', () => {
+  const status = (result) => result.candidates.find((fund) => fund.id === 'innovation').status;
+  const selected = { innovationPaths: ['graduation'] };
+  const confirmed = walk({ ...selected, graduationVerified: 'yes' });
+  assert.equal(status(confirmed), 'reviewing');
+  assert.equal(confirmed.answers.graduationVerified, 'yes');
+  assert.equal(status(walk({ ...selected, graduationVerified: 'no' })), 'ineligible');
+  assert.equal(status(walk({ ...selected, graduationVerified: 'unknown' })), 'needs_info');
+  const alternative = walk({ innovationPaths: ['graduation', 'export'], graduationVerified: 'no' });
+  assert.equal(status(alternative), 'reviewing');
+  assert.equal(alternative.answers.graduationVerified, undefined, 'another proven innovation path makes graduation confirmation unnecessary');
+  const question = catalog.questions.find((item) => item.id === 'graduationVerified');
+  for (const detail of ['30%', '3명', '5명', '8명', '10명', '지위유지']) assert.ok(question.description.includes(detail), detail);
 });
 
 test('investment and restart require their actual evidence, not just a selected label', () => {

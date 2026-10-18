@@ -2819,6 +2819,70 @@ form label:not(:first-child) {
 .source-meta {
   flex-wrap: wrap;
 }
+.assumption-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 14px 17px;
+  border: 1px solid #d8e7ed;
+  border-radius: 13px;
+  background: #f2f8fa;
+  color: #3c5b66;
+  font-size: 13px;
+  line-height: 1.75;
+}
+.assumption-notice > svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.assumption-notice strong {
+  display: block;
+  color: #304f5b;
+  font-weight: 700;
+}
+.assumption-notice p {
+  margin: 3px 0 0;
+}
+.assumption-details {
+  margin-top: 4px;
+}
+.assumption-details > summary {
+  width: fit-content;
+  cursor: pointer;
+  font-size: 12px;
+}
+.assumption-details ul {
+  margin: 5px 0 0;
+  padding-left: 18px;
+}
+@media (max-width: 600px) {
+  .workflow-strip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 14px;
+  }
+  .workflow-divider {
+    display: none;
+  }
+  .assumption-notice {
+    padding: 12px 13px;
+  }
+}
+@media print {
+  .assumption-notice {
+    border-color: #aaa;
+    background: #fff;
+    color: #222;
+    break-inside: avoid;
+  }
+  .assumption-notice strong {
+    color: #111;
+  }
+  .assumption-details > ul {
+    display: block !important;
+  }
+}
 .question-reference {
   margin: 18px 0;
   border: 1px solid #dce7e0;

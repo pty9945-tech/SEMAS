@@ -8,20 +8,15 @@ const c = (label,rule,sourceId,item) => ({label,rule,evidence:{...sources[source
 const active = (value,extra={}) => eq('businessStatus',value,{confirmationId:'businessStatusConfirm',...extra});
 const purpose = value => has('purpose',value,{confirmationId:'purposeConfirm'});
 const selected = (q,values) => any(...values.map(v=>has(q,v)));
-const normalEmployees = any(eq('employees','under5'),all(eq('employees','fiveToNine'),eq('industry','labor10')));
-const retained = all(inList('employees',['under5','fiveToNine','tenToNineteen']),eq('retainedStatus','yes'));
 const exception = {unknownValues:['exception']};
 const hardship = any(eq('salesDrop','atLeast15'),selected('hardshipException',['employmentCrisis','smeSpecial','commercialArea','industryPreemptive','flight1229','employmentPreemptive','minister']));
 const innovationPaths = ['longstanding','social','academy','smart','export','growth','factory','local','graduation','faithful'];
-const innovationPath = id => id === 'graduation' ? all(has('innovationPaths',id),normalEmployees,eq('smallEnterprise','yes'),eq('graduationVerified','yes')) : id === 'academy' ? all(has('innovationPaths',id),eq('academyRestrictions','clear',exception)) : has('innovationPaths',id);
+const innovationPath = id => id === 'graduation' ? all(has('innovationPaths',id),eq('graduationVerified','yes')) : id === 'academy' ? all(has('innovationPaths',id),eq('academyRestrictions','clear',exception)) : has('innovationPaths',id);
 const innovationAny = ids => any(...ids.map(innovationPath));
 export const conditions = {
   'A-ACTIVE':c('영업 중인 사업체 — 재해 휴업 예외는 별도 확인',active('active',{unknownValues:['paused']}),'agency-common','7. 대출 제한기준 및 확인 방법 ④ 휴·폐업'),
   'D-ACTIVE':c('영업 중인 사업체',active('active'),'direct-common','제6장 대출제한대상 ⑤ 휴·폐업'),
   'E-ACTIVE':c('영업 중 또는 재해로 직접 피해를 입은 휴업',any(active('active'),all(active('paused'),eq('disasterPause','yes'))),'emergency-direct','2. 대출제한대상 — 휴·폐업 예외'),
-  'SIZE-EMP':c('업종별 상시근로자 기준 또는 법정 지위유지',any(normalEmployees,retained),'agency-common','붙임1 소상공인 확인 기준 — 상시근로자·지위유지'),
-  'SIZE-REV':c('소기업 평균매출액 기준 또는 법정 지위유지',any(eq('smallEnterprise','yes'),retained),'agency-common','붙임1 소상공인 확인 기준 / 붙임2 주된 업종별 평균매출액 기준'),
-  'FORM':c('지원대상 사업자 형태 및 영리성',eq('businessForm','eligible',exception),'direct-common','제4장 영리·비영리기업 기준 및 확인방법'),
   'INDUSTRY':c('융자 제외 업종에 해당하지 않음',eq('exclusionStatus','clear',exception),'agency-common','붙임4 소상공인 정책자금 융자제외 대상 업종'),
   'A-TAX':c('대리대출 세금체납 제한 검토',eq('taxStatus','clear',{unknownValues:['deferred','seizure']}),'agency-common','7. 대출 제한기준 및 확인 방법 ① 세금체납'),
   'D-TAX':c('직접대출 세금체납 없음 또는 명시된 유예·특례',inList('taxStatus',['clear','deferred','seizure']),'direct-common','제6장 대출제한대상 ① 세금체납 및 예외'),
@@ -48,7 +43,7 @@ export const conditions = {
   'INVESTMENT':c('지정 주관기관 선투자 및 소상공인 선투자 추천서',eq('investment','yes'),'investment','1. 개요 — 지원대상'),
   'RESTART':c('재도전의 한 경로 이상 및 그 경로 세부요건 확인',all(selected('restartPaths',['preparation','early','adjustment','hope','leap']),eq('restartVerified','yes')),'restart','1. 개요 — 일반형·희망형·도약형 지원대상 전체 요건'),
 };
-const shared=['SIZE-EMP','SIZE-REV','FORM','INDUSTRY','DELINQUENCY','BALANCE'];
+const shared=['INDUSTRY','DELINQUENCY','BALANCE'];
 const agency=['A-ACTIVE',...shared,'A-TAX','A-RESTRICTIONS'];
 const direct=['D-ACTIVE',...shared,'D-TAX','D-RECENT','D-RESTRICTIONS'];
 const extras={general:['GENERAL-FREQUENCY'],disabled:['DISABLED'],youth:['YOUTH'],'temporary-agency':['HARDSHIP'],'temporary-direct':['TEMP-AGE','TEMP-REVENUE','HARDSHIP-DIRECT'],credit:['CREDIT-SCORE','CREDIT-AGE','CREDIT-EDUCATION','CREDIT-GRADE','CREDIT-BALANCE'],'emergency-direct':['E-ACTIVE','DISASTER'],innovation:['INNOVATION','INNOVATION-PURPOSE'],investment:['INVESTMENT'],restart:['RESTART']};

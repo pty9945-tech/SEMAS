@@ -1,6 +1,6 @@
 import { questions as baseQuestions } from './questions.js';
 import { conditions, fundConditionIds } from './rules.js';
-import { agencyFunds, agencyRevenueThresholds, agencyCommonFacts, agencySpecialFacts } from './agency-data.js';
+import { agencyFunds, agencyCommonFacts, agencySpecialFacts } from './agency-data.js';
 import { directFundsFacts, directCommonFacts } from './direct-data.js';
 import { sources } from './sources.js';
 export { conditions };
@@ -32,11 +32,6 @@ export const funds = [
 ];
 
 const helpers = {
-  smallEnterprise: [
-    ...agencyRevenueThresholds.map(row => `${row.limit / 100_000_000}억원 이하: ${row.label} (${row.classifications.join(', ')})`),
-    ...agencyCommonFacts.revenueExceptions,
-    '주된 업종의 기준과 기업 전체 평균매출액을 비교합니다. 직전 3개 사업연도가 36개월이면 총매출/3, 짧은 업력은 해당 지침의 평균·연환산 방식을 적용합니다.',
-  ],
   agencyRestrictions:[agencyCommonFacts.restrictions.text,'적용 대상인 공동대표·관계기업까지 확인했는지 점검하세요. 실제 신용조회 결과가 없다면 모름으로 남겨주세요.'],
   directRestrictions:[...directCommonFacts.restrictionNotes,'2년 연속 매출 50% 이상 감소, 적자와 자본전액잠식, 3년 연속 이자보상배율 1 미만 등은 업력 7년 이하 등 예외를 함께 검토합니다. 해당 자금별 제한표를 전부 확인하지 못했다면 모름으로 남겨주세요.'],
   exclusionStatus:['제외업종표 전체와 산업분류 세세분류를 확인해야 합니다. 일부 예시만으로 해당 없음으로 답하지 마세요.','부동산관리업 6821, 같은 장소 6개월 이상 중개·대리업 68221/분양대행업 68224, 공유오피스·공유주방, 유사의료업, 시각장애인 안마업 등 명시된 예외가 있습니다.','재해자금은 업종 예외가 더 넓습니다. 일반적으로 제외되는 업종이라도 재해자금 예외를 확인하지 않았다면 “예외 검토”를 선택하세요.',agencySpecialFacts.landlord.expression],
@@ -51,7 +46,10 @@ export const questions = baseQuestions.map(question=>({
 }));
 export const questionFlow = questions.map(({id})=>({questionId:id}));
 export const catalog = {meta:{
-  mode:'official',title:'소상공인 정책자금 상담 도우미',year:2026,verifiedAt:'2026-10-15',datasetVersion:'2026-uploaded-1',
+  mode:'official',title:'소상공인 정책자금 상담 도우미',year:2026,verifiedAt:'2026-10-15',datasetVersion:'2026-uploaded-2-small-business-assumed',updatedAt:'2026-10-19',
+  assumptionNotice:'소상공인 기본요건 충족을 전제로 상담합니다.',
+  assumedRequirements:['상시근로자 수 기준','업종별 소기업 평균매출액 기준','기본 사업자 형태·영리성 기준'],
+  assumptionDetails:'기본 소상공인 여부는 다시 묻지 않습니다. 자금별 추가 매출·청년 고용·졸업후보 요건과 융자 제외 업종·체납·연체 제한은 별도로 확인합니다.',
   notice:'2026년 제공 자료 기준 · 증빙·예외는 추가 확인 · 현재 접수 현황 별도 확인',
   finalNotice:'입력한 답변에 따른 상담 검토용 결과입니다. 최종 지원 여부와 대출금액·금리는 공단·보증기관·은행 심사 및 접수·예산 상황에 따라 결정됩니다.',
   coverage:'첨부된 대리대출 4종·직접대출 6종을 검토합니다. 대환 등 다른 자금이나 이후 변경 공고는 포함하지 않습니다. 예외·증빙을 확인하지 못한 조건은 확인 필요로 남겨주세요.',
