@@ -2,6 +2,8 @@
 
 **[사이트 바로 열기](https://pty9945-tech.github.io/SEMAS/)**
 
+**[HTML 파일 받기](https://pty9945-tech.github.io/SEMAS/download.html)** · [ZIP 바로 받기](https://pty9945-tech.github.io/SEMAS/downloads/dongjak-policy-helper.zip)
+
 누구나 로그인 없이 웹브라우저에서 질문을 선택하고 정책자금 검토 결과를 볼 수 있습니다. 사용자의 요청에 따라 초대·이메일 인증 없이 이용하는 공개형을 기본으로 제공합니다. 별도 프로그램·메일 서비스·서버·환경변수 설정이 필요 없습니다.
 
 ## 이용 방법
@@ -14,6 +16,8 @@
 이름·연락처·주민등록번호·사업자등록번호를 입력하지 않습니다. 상담 답변은 현재 브라우저 탭의 메모리에서만 처리하며 서버로 보내거나 URL·브라우저 저장소에 기록하지 않습니다. 새로고침하면 상담 내용이 초기화됩니다.
 
 ## HTML 파일로 이용
+
+[다운로드 페이지](https://pty9945-tech.github.io/SEMAS/download.html)에서 **HTML 파일 받기**를 누릅니다. HTML 저장이 어려우면 ZIP 파일을 받아 압축을 풉니다. 대화의 `/workspace/...` 링크는 작업 환경 내부 경로여서 파일 전달용으로 사용하지 않습니다.
 
 `동작센터-정책자금-상담-도우미.html` 파일 하나를 내려받아 Chrome 또는 Edge에서 열면 됩니다. 설치·로그인·서버·GitHub 접속 없이 상담하며, 다른 사람에게 파일을 그대로 전달할 수 있습니다. 화면·질문·정책자료·판단 규칙이 파일 안에 모두 포함됩니다. 공식 누리집 링크를 열 때만 인터넷이 필요합니다.
 
@@ -29,6 +33,8 @@ npm run test:html
 완성 파일: `dist-html/동작센터-정책자금-상담-도우미.html`. 기존 웹사이트의 `dist/`와 별도로 생성하므로 두 방식으로 함께 배포할 수 있습니다.
 
 검사 환경의 관리 정책이 `file://` 접근을 차단하면 직접 파일 열기는 미검증으로 표시하고, 동일한 HTML 내용을 브라우저 메모리에 불러와 오프라인 기능을 검사합니다. 브라우저 관리 정책은 변경하지 않습니다.
+
+다운로드 페이지·HTML·ZIP을 포함한 웹 배포본은 Python 3가 설치된 개발 환경에서 `npm run build:download`로 생성합니다. ZIP은 생성 직후 CRC와 원본 HTML의 바이트 일치를 검증합니다.
 
 ## 정책 자료
 
@@ -48,7 +54,7 @@ Node.js 24.x 환경에서:
 npm ci
 npm run dev
 npm test
-npm run build
+npm run build:download
 npm run test:e2e
 ```
 
