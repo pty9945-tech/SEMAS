@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { SITE_CENTER, SITE_NAME, SITE_SUBTITLE } from "../policy/branding.js";
 import "./styles.css";
 
 function Icon({ name = "leaf", size = 20, ...props }) {
@@ -195,16 +196,14 @@ function Badge({ status }) {
 }
 function Brand({ compact = false }) {
   return (
-    <div className="brand">
+    <div className="brand" aria-label={SITE_NAME}>
       <span className="brand-mark">
         <Icon name="leaf" size={28} />
       </span>
       <div>
-        <strong>
-          소담<span className="brand-dot">.</span>
-        </strong>
+        <strong>{SITE_CENTER}</strong>
         {!compact && (
-          <span className="brand-subtitle">정책자금 상담 도우미</span>
+          <span className="brand-subtitle">{SITE_SUBTITLE}</span>
         )}
       </div>
     </div>
@@ -426,7 +425,7 @@ function Login({ onLogin, notice }) {
         <PolicyNotice />
       </div>
       <footer className="login-footer">
-        <span>소담 · 소상공인 정책자금 상담 도우미</span>
+        <span>{SITE_NAME}</span>
         <span>공식 기관이 제공하는 서비스가 아닙니다.</span>
       </footer>
     </div>
@@ -955,6 +954,7 @@ function Results({ evaluation, catalog, onCopy, onPrint, onRestart, busy }) {
   );
   return (
     <section className="results" data-testid="results">
+      <p className="print-summary"><strong>{SITE_NAME}</strong></p>
       <div className="results-intro">
         <span className="result-check">
           <Icon name={candidates.length ? "check" : "help"} size={25} />
@@ -1214,7 +1214,7 @@ const resourceText = (item) =>
         .join(" · ");
 function resultText(evaluation, catalog) {
   return [
-    "소담 · 정책자금 상담 결과",
+    `${SITE_NAME} · 상담 결과`,
     catalog.meta.notice || DEFAULT_NOTICE,
     catalog.meta.coverage || "",
     `적용 연도: ${catalog.meta.year || "미확인"} / 자료 확인일: ${catalog.meta.verifiedAt || "미확인"}`,
@@ -1693,7 +1693,7 @@ function App() {
       <footer className="app-footer">
         <span>
           <Icon name="leaf" size={14} />
-          소담 · 소상공인 정책자금 상담 도우미
+          {SITE_NAME}
         </span>
         <p>최종 지원 여부는 심사 및 접수 상황에 따라 결정됩니다.</p>
         <span className="footer-privacy">
@@ -1725,7 +1725,7 @@ function App() {
             <span className="login-lock">
               <Icon name="leaf" size={28} />
             </span>
-            <h2 id="guide-title">소담, 이렇게 이용해요</h2>
+            <h2 id="guide-title">{SITE_NAME} 이용 안내</h2>
             <ol>
               <li>
                 <strong>한 질문씩 선택해 주세요.</strong>

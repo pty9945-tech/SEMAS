@@ -3,6 +3,7 @@ import { conditions, fundConditionIds } from './rules.js';
 import { agencyFunds, agencyCommonFacts, agencySpecialFacts } from './agency-data.js';
 import { directFundsFacts, directCommonFacts } from './direct-data.js';
 import { sources } from './sources.js';
+import { SITE_NAME } from './branding.js';
 export { conditions };
 
 const descriptions = {
@@ -46,7 +47,7 @@ export const questions = baseQuestions.map(question=>({
 }));
 export const questionFlow = questions.map(({id})=>({questionId:id}));
 export const catalog = {meta:{
-  mode:'official',title:'소상공인 정책자금 상담 도우미',year:2026,verifiedAt:'2026-10-15',datasetVersion:'2026-uploaded-2-small-business-assumed',updatedAt:'2026-10-19',
+  mode:'official',title:SITE_NAME,year:2026,verifiedAt:'2026-10-15',datasetVersion:'2026-uploaded-2-small-business-assumed',updatedAt:'2026-10-19',
   assumptionNotice:'소상공인 기본요건 충족을 전제로 상담합니다.',
   assumedRequirements:['상시근로자 수 기준','업종별 소기업 평균매출액 기준','기본 사업자 형태·영리성 기준'],
   assumptionDetails:'기본 소상공인 여부는 다시 묻지 않습니다. 자금별 추가 매출·청년 고용·졸업후보 요건과 융자 제외 업종·체납·연체 제한은 별도로 확인합니다.',

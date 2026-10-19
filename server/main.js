@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import nodemailer from 'nodemailer';
 import { createApp } from './app.js';
+import { SITE_NAME } from '../policy/branding.js';
 
 const production = !['development', 'test'].includes(process.env.NODE_ENV);
 const origin = process.env.APP_ORIGIN;
@@ -42,8 +43,8 @@ if (process.env.SMTP_HOST && process.env.SMTP_FROM) {
     await transporter.sendMail({
       from: process.env.SMTP_FROM,
       to,
-      subject: '[소담] 로그인 인증번호',
-      text: `소담 정책자금 상담 도우미 로그인 인증번호는 ${code} 입니다.\n\n10분 안에 입력해 주세요. 요청하지 않았다면 이 메일을 무시해 주세요.\n상담내용은 이 메일에 포함되지 않습니다.`,
+      subject: `[${SITE_NAME}] 로그인 인증번호`,
+      text: `${SITE_NAME} 로그인 인증번호는 ${code} 입니다.\n\n10분 안에 입력해 주세요. 요청하지 않았다면 이 메일을 무시해 주세요.\n상담내용은 이 메일에 포함되지 않습니다.`,
       disableFileAccess: true,
       disableUrlAccess: true,
     });
