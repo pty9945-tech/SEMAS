@@ -199,6 +199,57 @@ function relevantQuestions(answers, candidates) {
     });
 }
 
+/** Only unresolved rule branches can relate the current question to a fund. */
+function pendingAtomsForQuestion(rule, answers, questionId) {
+  if (!evaluateExpression(rule, answers).pendingQuestionIds.includes(questionId)) return [];
+  if (rule.all || rule.any) {
+    return (rule.all ?? rule.any).flatMap((child) => pendingAtomsForQuestion(child, answers, questionId));
+  }
+  return [rule];
+}
+
+function annotateOptions(question, answers, candidates) {
+  const targets = candidates.filter((fund) => fund.status !== 'ineligible').map((fund) => ({
+    fund,
+    rules: fund.conditionIds.flatMap((id) => pendingAtomsForQuestion(conditions[id].rule, answers, question.id)),
+  })).filter((target) => target.rules.length > 0);
+  const reference = ({ fund }) => ({ id: fund.id, name: fund.name });
+  const options = question.options?.length ? question.options
+    : question.type === 'number' ? [{ value:'unknown', label:'모름 · 확인 필요', description:'자료 확인 후 다시 입력할 수 있어요.' }] : [];
+  return { ...question, options: options.map((option) => {
+    // This describes which explicit criteria a choice relates to, not a loan
+    // recommendation or a hypothetical update of the consultation answers.
+    const value = question.type === 'multi' ? [option.value] : option.value;
+    const classified = targets.map((target) => ({
+      ...target,
+      statuses: target.rules.map((rule) => evaluateExpression({
+        ...rule, questionId: question.id, confirmationId: undefined,
+      }, { [question.id]: value }).status),
+    }));
+    const matched = classified.filter((target) => target.statuses.includes('met'));
+    const unresolved = classified.filter((target) => !target.statuses.includes('met') && target.statuses.includes('unknown'));
+    let relatedFunds, relationLabel, relationNote = '';
+    if (matched.length > 0) {
+      relatedFunds = [...matched, ...unresolved].map(reference);
+      relationLabel = '연관 자금';
+      if (unresolved.length > 0) relationNote = '일부 자금은 해당 요건의 추가 확인이 필요해요.';
+    } else if (unresolved.length > 0) {
+      relatedFunds = unresolved.map(reference);
+      relationLabel = '추가 확인 대상';
+      relationNote = '확인되지 않은 답변은 해당 없음으로 처리하지 않아요.';
+    } else if (['purpose', 'purposeConfirm'].includes(question.id)) {
+      relatedFunds = [];
+      relationLabel = '자료 범위 밖';
+      relationNote = '첨부 자료에는 이 용도의 자금이 포함되어 있지 않아요.';
+    } else {
+      relatedFunds = targets.map(reference);
+      relationLabel = '요건 확인 대상';
+      relationNote = '해당 자금의 요건 충족 여부를 확인하는 답변이에요.';
+    }
+    return { ...option, relatedFunds, relationLabel, relationNote };
+  }) };
+}
+
 /** Replay the valid path; never retain answers after a missing required step. */
 export function normalizeAnswers(input = {}) {
   const supplied = sanitizeAnswers(input);
@@ -215,7 +266,7 @@ export function evaluateAnswers(input = {}) {
   const answers = normalizeAnswers(input);
   const candidates = evaluateCandidates(answers);
   const remaining = relevantQuestions(answers, candidates);
-  const nextQuestion = remaining[0] ?? null;
+  const nextQuestion = remaining[0] ? annotateOptions(remaining[0], answers, candidates) : null;
   // A missing source/question mapping must never silently look fully checked.
   if (!nextQuestion) {
     for (const candidate of candidates) {

@@ -578,6 +578,37 @@ function CandidateSidebar({ candidates }) {
     </section>
   );
 }
+function OptionFundRelation({ option, id }) {
+  const funds = option.relatedFunds || [];
+  const visibleFunds = funds.length > 3 ? funds.slice(0, 2) : funds;
+  const remainingFunds = funds.length > 3 ? funds.slice(2) : [];
+  return (
+    <div className="option-funds" id={id} data-testid={`option-related-${option.value}`}>
+      <strong className="option-funds-label">
+        <Icon name="folder" size={13} />
+        {option.relationLabel || "연관 자금"}
+      </strong>
+      {visibleFunds.length > 0 && (
+        <ul className="option-fund-list">
+          {visibleFunds.map((fund) => <li key={fund.id} data-fund-id={fund.id}>{fund.name}</li>)}
+        </ul>
+      )}
+      {remainingFunds.length > 0 && (
+        <details className="option-funds-more" data-testid={`option-related-more-${option.value}`}>
+          <summary>외 {remainingFunds.length}개 자금 보기</summary>
+          <ul className="option-fund-list">
+            {remainingFunds.map((fund) => <li key={fund.id} data-fund-id={fund.id}>{fund.name}</li>)}
+          </ul>
+        </details>
+      )}
+      {(option.relationNote || funds.length === 0) && (
+        <p className="option-funds-note">
+          {option.relationNote || "관련 자금은 답변에 따라 확인해요."}
+        </p>
+      )}
+    </div>
+  );
+}
 function Question({ evaluation, draft, setDraft, onNext, onBack, busy }) {
   const question = evaluation.nextQuestion;
   const headingRef = useRef(null);
@@ -595,7 +626,7 @@ function Question({ evaluation, draft, setDraft, onNext, onBack, busy }) {
         ? selected === "unknown" ||
           (typeof selected === "number" && Number.isFinite(selected) && !invalidNumber)
         : !!selected;
-  const options = question.type === "number"
+  const options = question.type === "number" && !question.options?.length
     ? [{ value: "unknown", label: "모름 · 확인 필요", description: "자료를 확인한 뒤 다시 입력할 수 있어요." }]
     : question.options || [];
   function select(value) {
@@ -695,7 +726,7 @@ function Question({ evaluation, draft, setDraft, onNext, onBack, busy }) {
         </div>
       )}
       <div
-        className={`options-grid ${options.length > 4 ? "has-last-option" : ""}`}
+        className={`options-grid ${options.length % 2 === 1 && options.at(-1)?.value === "unknown" ? "has-last-option" : ""}`}
         role="group"
         aria-label={question.title}
       >
@@ -705,28 +736,35 @@ function Question({ evaluation, draft, setDraft, onNext, onBack, busy }) {
               ? selected.includes(option.value)
               : selected === option.value;
           return (
-            <button
-              key={option.value}
-              type="button"
-              className={`option-button ${isSelected ? "selected" : ""} ${option.value === "unknown" ? "unknown-option" : ""}`}
-              data-testid={`option-${option.value}`}
-              aria-pressed={isSelected}
-              disabled={busy}
-              onClick={() => select(option.value)}
+            <div
+              key={`${question.id}-${option.value}`}
+              className={`option-card ${isSelected ? "is-selected" : ""}`}
+              data-testid={`option-card-${option.value}`}
             >
-              <span className="option-icon">
-                <Icon name={icons[option.value] || "folder"} size={23} />
-              </span>
-              <span className="option-text">
-                <strong>{option.label}</strong>
-                <span>{option.description}</span>
-              </span>
-              <span
-                className={`option-indicator ${question.type === "multi" ? "square" : ""}`}
+              <button
+                type="button"
+                className={`option-button ${isSelected ? "selected" : ""} ${option.value === "unknown" ? "unknown-option" : ""}`}
+                data-testid={`option-${option.value}`}
+                aria-pressed={isSelected}
+                aria-describedby={`option-funds-${question.id}-${option.value}`}
+                disabled={busy}
+                onClick={() => select(option.value)}
               >
-                {isSelected && <Icon name="check" size={12} />}
-              </span>
-            </button>
+                <span className="option-icon">
+                  <Icon name={icons[option.value] || "folder"} size={23} />
+                </span>
+                <span className="option-text">
+                  <strong>{option.label}</strong>
+                  <span>{option.description}</span>
+                </span>
+                <span
+                  className={`option-indicator ${question.type === "multi" ? "square" : ""}`}
+                >
+                  {isSelected && <Icon name="check" size={12} />}
+                </span>
+              </button>
+              <OptionFundRelation option={option} id={`option-funds-${question.id}-${option.value}`} />
+            </div>
           );
         })}
       </div>

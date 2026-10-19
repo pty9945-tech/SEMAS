@@ -55,6 +55,36 @@ test('any visitor starts immediately and answers stay inside the tab',async({pag
   await expect(page.getByTestId('question-card')).toHaveAttribute('data-question-id','purpose');
   expect(apiRequests).toEqual([]);expect(errors).toEqual([]);
 });
+test('each choice explains its related funds and expanding names does not select an answer',async({page})=>{
+  await page.goto('./');
+  const operations=page.getByTestId('option-related-operations');
+  await expect(operations.getByText('일반경영안정자금',{exact:true})).toBeVisible();
+  await expect(operations.getByText('장애인기업지원자금',{exact:true})).toBeVisible();
+  const equipment=page.getByTestId('option-related-equipment');
+  await expect(equipment.getByText('혁신성장촉진자금',{exact:true})).toBeVisible();
+  await expect(equipment.getByText('민간투자연계형매칭융자',{exact:true})).toBeVisible();
+  await expect(equipment).not.toContainText('일반경영안정자금');
+  await expect(page.getByTestId('option-related-recovery')).toContainText('긴급경영안정자금(재해·직접대출)');
+  await expect(page.getByTestId('option-related-refinance')).toContainText(/자료|범위|대환/);
+  await expect(page.getByTestId('option-related-unknown')).toContainText(/확인/);
+
+  const operationsButton=page.getByTestId('option-operations');
+  await expect(operationsButton).toHaveAttribute('aria-pressed','false');
+  await page.getByTestId('option-related-more-operations').locator('summary').click();
+  for(const name of ['청년고용연계자금','긴급경영안정자금 · 일시적경영애로(대리대출)','혁신성장촉진자금','일시적경영애로자금(직접대출)','신용취약소상공인자금','민간투자연계형매칭융자','재도전특별자금']) {
+    await expect(operations.getByText(name,{exact:true})).toBeVisible();
+  }
+  await expect(operations).not.toContainText('긴급경영안정자금(재해·직접대출)');
+  await expect(operationsButton).toHaveAttribute('aria-pressed','false');
+  await expect(page.getByTestId('next-button')).toBeDisabled();
+  await expect(page.getByTestId('question-card')).toHaveAttribute('data-question-id','purpose');
+  await operationsButton.click();
+  await expect(operationsButton).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByTestId('next-button')).toBeEnabled();
+  // Toggling the explanatory details must also preserve an existing selection.
+  await page.getByTestId('option-related-more-operations').locator('summary').click();
+  await expect(operationsButton).toHaveAttribute('aria-pressed','true');
+});
 test('multiple funds and earlier changes recalculate remaining questions',async({page})=>{
   await page.goto('./');
   await walk(page,{disabledProof:'yes',disabledDetails:'yes',businessAge:'from2To3',ownerAge:'under40'});
@@ -79,6 +109,10 @@ test('closed and unknown paths finish without treating unknown as no',async({pag
 test('mobile visitors can complete the consultation with no horizontal overflow',async({page})=>{
   await page.setViewportSize({width:390,height:844});await page.goto('./');
   await expect(page.getByTestId('question-card')).toBeVisible();
+  await expect(page.getByTestId('option-related-equipment')).toContainText('민간투자연계형매칭융자');
+  await page.getByTestId('option-related-more-operations').locator('summary').click();
+  await expect(page.getByTestId('option-related-operations').getByText('재도전특별자금',{exact:true})).toBeVisible();
+  await expect(page.getByTestId('option-operations')).toHaveAttribute('aria-pressed','false');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.screenshot({path:'artifacts/public-mobile.png',fullPage:true});
   await choose(page,['operations']);await choose(page,'closed');await expect(page.getByTestId('results')).toBeVisible();

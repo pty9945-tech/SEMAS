@@ -822,7 +822,7 @@ form label:not(:first-child) {
   color: #fff;
   border-color: #6c9f75;
 }
-.has-last-option .option-button:last-child {
+.has-last-option > .option-card:last-child {
   grid-column: 1/-1;
 }
 .unknown-option {
@@ -2964,6 +2964,81 @@ form label:not(:first-child) {
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* Keep fund context below each choice without making the context a choice. */
+.option-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.option-card > .option-button {
+  flex: 1;
+  width: 100%;
+  border-radius: 13px 13px 0 0;
+}
+.option-funds {
+  min-width: 0;
+  padding: 12px 16px 14px;
+  border: 1px solid #e3e8dd;
+  border-top: 0;
+  border-radius: 0 0 13px 13px;
+  background: #f8faf7;
+  color: #496454;
+  font-size: 13px;
+  line-height: 1.65;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.option-card.is-selected > .option-funds {
+  border-color: #74a280;
+  background: #f0f7ef;
+}
+.option-funds-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #486352;
+  font-size: 12px;
+  font-weight: 650;
+}
+.option-funds-label svg {
+  flex-shrink: 0;
+}
+.option-fund-list {
+  list-style: none;
+  padding: 0;
+  margin: 5px 0 0;
+}
+.option-fund-list > li + li {
+  margin-top: 3px;
+}
+.option-funds-more {
+  margin-top: 7px;
+}
+.option-funds-more > summary {
+  width: fit-content;
+  max-width: 100%;
+  color: #32654e;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.option-funds-more > summary:focus-visible {
+  outline: 2px solid #32654e;
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+.option-funds-note {
+  margin: 6px 0 0;
+  color: #586b61;
+  font-size: 12px;
+  line-height: 1.65;
+}
+@media (max-width: 600px) {
+  .option-funds {
+    padding: 11px 12px 13px;
+  }
 }
 @media (max-width: 600px) {
   .public-access-label { display: none; }
