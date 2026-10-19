@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-private/
+dist-html/
 .env
 .env.*
 !.env.example
