@@ -661,7 +661,12 @@ function Question({ evaluation, draft, setDraft, onNext, onBack, busy }) {
     ? [{ value: "unknown", label: "모름 · 확인 필요", description: "자료를 확인한 뒤 다시 입력할 수 있어요." }]
     : question.options || [];
   function select(value) {
-    if (question.type !== "multi") return setDraft(value);
+    if (busy) return;
+    if (question.type !== "multi") {
+      setDraft(value);
+      onNext(value);
+      return;
+    }
     if (["unknown", "none"].includes(value))
       return setDraft(selected.includes(value) ? [] : [value]);
     const withoutUnknown = selected.filter((v) => !["unknown", "none"].includes(v));
@@ -687,6 +692,7 @@ function Question({ evaluation, draft, setDraft, onNext, onBack, busy }) {
       className="question-card"
       data-testid="question-card"
       data-question-id={question.id}
+      data-question-type={question.type}
       aria-busy={busy}
     >
       <div className="question-topline">
@@ -718,7 +724,13 @@ function Question({ evaluation, draft, setDraft, onNext, onBack, busy }) {
       {question.type === "multi" && (
         <p className="multi-hint">
           <Icon name="check" size={14} />
-          해당하는 항목을 모두 선택해 주세요.
+          해당하는 항목을 모두 고른 뒤 ‘다음 질문’을 눌러주세요.
+        </p>
+      )}
+      {question.type === "single" && (
+        <p className="multi-hint" data-testid="auto-advance-hint">
+          <Icon name="arrow" size={14} />
+          선택하면 다음으로 이동해요. 잘못 골랐다면 ‘이전 질문’으로 돌아갈 수 있어요.
         </p>
       )}
       {question.type === "number" && (
@@ -742,7 +754,7 @@ function Question({ evaluation, draft, setDraft, onNext, onBack, busy }) {
                 setDraft(Number.isFinite(event.currentTarget.valueAsNumber) ? event.currentTarget.valueAsNumber : "");
               }}
               onKeyDown={(event) => {
-                if (event.key === "Enter" && hasSelection && !busy) onNext();
+                if (event.key === "Enter" && hasSelection && !busy) onNext(draft);
               }}
             />
             {question.unit && <span>{question.unit}</span>}
@@ -803,22 +815,23 @@ function Question({ evaluation, draft, setDraft, onNext, onBack, busy }) {
         <button
           type="button"
           className="back-button"
+          data-testid="back-button"
           disabled={busy || evaluation.answered.length === 0}
           onClick={onBack}
         >
           <Icon name="back" size={17} />
           이전 질문
         </button>
-        <button
+        {question.type !== "single" && <button
           type="button"
           className="primary-button"
           data-testid="next-button"
           disabled={!hasSelection || busy}
-          onClick={onNext}
+          onClick={() => onNext(draft)}
         >
           {busy ? "확인 중…" : "다음 질문"}
           <Icon name="arrow" size={18} />
-        </button>
+        </button>}
       </div>
       <div className="question-privacy">
         <Icon name="shield" size={15} />
@@ -1017,7 +1030,9 @@ function FundResult({ fund, summary }) {
     </article>
   );
 }
-function Results({ evaluation, catalog, onCopy, onPrint, onRestart, onGuide, busy }) {
+function Results({ evaluation, catalog, onCopy, onPrint, onRestart, onBack, onGuide, busy }) {
+  const headingRef = useRef(null);
+  useEffect(() => { headingRef.current?.focus({ preventScroll: true }); }, []);
   const summary = buildResultSummary(evaluation);
   const candidates = evaluation.candidates.filter(
     (c) => c.status !== "ineligible",
@@ -1052,7 +1067,7 @@ function Results({ evaluation, catalog, onCopy, onPrint, onRestart, onGuide, bus
           <Icon name={candidates.length ? "check" : "help"} size={25} />
         </span>
         <p className="eyebrow">선택한 내용을 함께 정리했어요</p>
-        <h1>
+        <h1 ref={headingRef} tabIndex={-1}>
           {candidates.length ? (
             <>
               검토할 후보가 <em>{candidates.length}개</em> 있어요.
@@ -1067,6 +1082,10 @@ function Results({ evaluation, catalog, onCopy, onPrint, onRestart, onGuide, bus
             : "아래 미충족 이유를 확인하고, 입력 내용이 맞는지 다시 살펴보세요."}
         </p>
         <div className="result-toolbar">
+          <button className="text-button" data-testid="back-button" disabled={busy || evaluation.answered.length === 0} onClick={onBack}>
+            <Icon name="back" size={16} />
+            이전 질문
+          </button>
           <button className="secondary-button" disabled={busy} onClick={onCopy}>
             <Icon name="copy" size={16} />
             결과 복사
@@ -1387,6 +1406,13 @@ function App() {
   const [guide, setGuide] = useState(false);
   const generation = useRef(0);
   const guideRef = useRef(null);
+  const previousEvaluation = useRef(null);
+  useEffect(() => {
+    if (evaluation && previousEvaluation.current) {
+      document.querySelector(evaluation.complete ? ".results" : ".question-card")?.scrollIntoView({ block: "start", behavior: "instant" });
+    }
+    previousEvaluation.current = evaluation;
+  }, [evaluation]);
   const resetSession = useCallback((message = "") => {
     generation.current++;
     setUser(null);
@@ -1522,14 +1548,14 @@ function App() {
       if (trigger?.isConnected) trigger.focus();
     };
   }, [guide]);
-  async function evaluate(answers) {
+  async function evaluate(answers, editingAnswer = null) {
     setBusy(true);
     setError("");
     setNotice("");
     try {
       const data = await api("/api/evaluate", post({ answers }));
       setEvaluation(data);
-      setDraft("");
+      setDraft(editingAnswer && data.nextQuestion?.id === editingAnswer.questionId ? editingAnswer.value : "");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -1544,7 +1570,7 @@ function App() {
     const answers = Object.fromEntries(
       evaluation.answered.slice(0, index).map((a) => [a.questionId, a.value]),
     );
-    evaluate(answers);
+    evaluate(answers, evaluation.answered[index]);
   }
   async function logout() {
     setBusy(true);
@@ -1741,6 +1767,7 @@ function App() {
                         onCopy={copy}
                         onPrint={print}
                         onRestart={() => evaluate({})}
+                        onBack={() => edit(evaluation.answered.at(-1)?.questionId)}
                         onGuide={() => setGuide(true)}
                         busy={busy}
                       />
@@ -1752,10 +1779,10 @@ function App() {
                           draft={draft}
                           setDraft={setDraft}
                           busy={busy}
-                          onNext={() =>
+                          onNext={(answer) =>
                             evaluate({
                               ...evaluation.answers,
-                              [evaluation.nextQuestion.id]: draft,
+                              [evaluation.nextQuestion.id]: answer,
                             })
                           }
                           onBack={() =>
@@ -1840,8 +1867,7 @@ function App() {
               <li>
                 <strong>한 질문씩 선택해 주세요.</strong>
                 <p>
-                  여러 항목에 해당하면 모두 선택할 수 있어요. 모르는 내용은
-                  ‘확인 필요’로 남겨요.
+                  하나를 고르는 질문은 선택하면 바로 다음으로 이동해요. 여러 항목을 고르는 질문은 선택을 마친 뒤 ‘다음 질문’을 눌러주세요. ‘이전 질문’으로 돌아가 답을 바꿀 수 있어요.
                 </p>
               </li>
               <li>

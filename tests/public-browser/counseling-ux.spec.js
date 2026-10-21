@@ -17,10 +17,24 @@ const baseline = {
 async function choose(page, value) {
   const question = page.getByTestId('question-card');
   const before = await question.getAttribute('data-question-id');
-  for (const item of Array.isArray(value) ? value : [value]) {
-    await page.getByTestId(`option-${item}`).click();
+  const type = await question.getAttribute('data-question-type');
+  const values = Array.isArray(value) ? value : [value];
+  if (type === 'multi') {
+    const selectedIds = await question.locator('.option-button[aria-pressed="true"]').evaluateAll(buttons => buttons.map(button => button.dataset.testid));
+    for (const id of selectedIds) {
+      if (!values.includes(id.slice('option-'.length))) await page.getByTestId(id).click();
+    }
+    for (const item of values) {
+      const button = page.getByTestId(`option-${item}`);
+      if (await button.getAttribute('aria-pressed') !== 'true') await button.click();
+    }
+    await page.getByTestId('next-button').click();
+  } else if (type === 'number' && typeof value === 'number') {
+    await page.getByTestId('number-answer').fill(String(value));
+    await page.getByTestId('next-button').click();
+  } else {
+    await page.getByTestId(`option-${value}`).click();
   }
-  await page.getByTestId('next-button').click();
   await expect.poll(() => question.getAttribute('data-question-id', { timeout: 300 }).catch(() => null))
     .not.toBe(before);
 }

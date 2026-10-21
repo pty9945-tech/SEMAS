@@ -39,10 +39,27 @@ async function login(page, email) {
 }
 
 async function choose(page, questionId, values) {
-  await expect(page.getByTestId('question-card')).toHaveAttribute('data-question-id', questionId);
-  for (const value of Array.isArray(values) ? values : [values]) await page.getByTestId(`option-${value}`).click();
+  const question = page.getByTestId('question-card');
+  await expect(question).toHaveAttribute('data-question-id', questionId);
+  const type = await question.getAttribute('data-question-type');
+  const desired = Array.isArray(values) ? values : [values];
   const pending = page.waitForResponse((response) => response.url().endsWith('/api/evaluate') && response.request().method() === 'POST');
-  await page.getByTestId('next-button').click();
+  if (type === 'multi') {
+    const selectedIds = await question.locator('.option-button[aria-pressed="true"]').evaluateAll(buttons => buttons.map(button => button.dataset.testid));
+    for (const id of selectedIds) {
+      if (!desired.includes(id.slice('option-'.length))) await page.getByTestId(id).click();
+    }
+    for (const value of desired) {
+      const button = page.getByTestId(`option-${value}`);
+      if (await button.getAttribute('aria-pressed') !== 'true') await button.click();
+    }
+    await page.getByTestId('next-button').click();
+  } else if (type === 'number' && typeof values === 'number') {
+    await page.getByTestId('number-answer').fill(String(values));
+    await page.getByTestId('next-button').click();
+  } else {
+    await page.getByTestId(`option-${values}`).click();
+  }
   const response = await pending;
   expect(response.status()).toBe(200);
   return response.json();
@@ -124,7 +141,9 @@ test('normal consultation, copy, print, no answer persistence and retained login
   const printableResources = page.locator('.result-resources').first();
   await expect(printableResources).toBeVisible();
   expect(await printableResources.innerText()).toContain('필요 서류');
-  await expect(page.locator('.print-summary')).toBeVisible();
+  await expect(page.locator('p.print-summary')).toBeVisible();
+  await expect(page.locator('section.print-summary')).toBeVisible();
+  await expect(page.locator('section.print-summary')).toContainText('영업 중');
   await expect(page.locator('.user-menu')).not.toBeVisible();
   await page.pdf({ path: 'artifacts/result.pdf', format: 'A4', printBackground: true });
   await page.emulateMedia({ media: 'screen' });
@@ -223,7 +242,6 @@ test('mobile layout fits screen and supports keyboard selection through results'
   await choose(page, 'purpose', ['operations']);
   await page.getByTestId('option-closed').focus();
   await page.keyboard.press('Enter');
-  await page.getByTestId('next-button').click();
   await expect(page.getByTestId('results')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });

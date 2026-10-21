@@ -32,10 +32,24 @@ const assumedQuestionIds = ['employees', 'industry', 'smallEnterprise', 'retaine
 async function choose(page, value) {
   const question = page.getByTestId('question-card');
   const previousId = await question.getAttribute('data-question-id');
-  for (const answer of Array.isArray(value) ? value : [value]) {
-    await page.getByTestId(`option-${answer}`).click();
+  const type = await question.getAttribute('data-question-type');
+  const values = Array.isArray(value) ? value : [value];
+  if (type === 'multi') {
+    const selectedIds = await question.locator('.option-button[aria-pressed="true"]').evaluateAll(buttons => buttons.map(button => button.dataset.testid));
+    for (const id of selectedIds) {
+      if (!values.includes(id.slice('option-'.length))) await page.getByTestId(id).click();
+    }
+    for (const answer of values) {
+      const button = page.getByTestId(`option-${answer}`);
+      if (await button.getAttribute('aria-pressed') !== 'true') await button.click();
+    }
+    await page.getByTestId('next-button').click();
+  } else if (type === 'number' && typeof value === 'number') {
+    await page.getByTestId('number-answer').fill(String(value));
+    await page.getByTestId('next-button').click();
+  } else {
+    await page.getByTestId(`option-${value}`).click();
   }
-  await page.getByTestId('next-button').click();
   await expect.poll(() => question.getAttribute('data-question-id', { timeout: 300 }).catch(() => null))
     .not.toBe(previousId);
 }
@@ -207,6 +221,11 @@ try {
   await expect(results).toContainText('현재 답변에 맞는 후보가 없어요.');
   await expect(results.locator('.fund-result')).toHaveCount(0);
   await expect(results.locator('.excluded-fund').first()).toBeVisible();
+  await page.getByTestId('back-button').click();
+  await expect(page.getByTestId('question-card')).toHaveAttribute('data-question-id', 'businessStatus');
+  await expect(page.getByTestId('option-closed')).toHaveAttribute('aria-pressed', 'true');
+  await page.getByTestId('option-active').click();
+  await expect(page.getByTestId('question-card')).toHaveAttribute('data-question-id', 'exclusionStatus');
 
   await page.getByRole('button', { name: '다시 상담하기', exact: true }).first().click();
   await walk(page, {}, true);
@@ -232,7 +251,7 @@ try {
     openingMode,
     offline: true,
     checks: ['generated HTML launch', 'title and fund relations', 'normal result', 'copy text', 'print',
-      'answer edit', 'no matching funds', 'unknown answers', '390px mobile',
+      'answer edit', 'single-choice auto advance and previous question from results', 'no matching funds', 'unknown answers', '390px mobile',
       'answers reset on document reload', 'no storage access, cookies, answer URLs, external requests, or page errors'],
     nativeClipboard,
   }, null, 2));

@@ -11,8 +11,22 @@ const baseline={
 async function choose(page,value) {
   const card=page.getByTestId('question-card');
   const before=await card.getAttribute('data-question-id');
-  for(const item of Array.isArray(value)?value:[value]) await page.getByTestId(`option-${item}`).click();
-  await page.getByTestId('next-button').click();
+  const type=await card.getAttribute('data-question-type');
+  const values=Array.isArray(value)?value:[value];
+  if(type==='multi') {
+    const selectedIds=await card.locator('.option-button[aria-pressed="true"]').evaluateAll(buttons=>buttons.map(button=>button.dataset.testid));
+    for(const id of selectedIds) {
+      if(!values.includes(id.slice('option-'.length))) await page.getByTestId(id).click();
+    }
+    for(const item of values) {
+      const button=page.getByTestId(`option-${item}`);
+      if(await button.getAttribute('aria-pressed')!=='true') await button.click();
+    }
+    await page.getByTestId('next-button').click();
+  } else if(type==='number'&&typeof value==='number') {
+    await page.getByTestId('number-answer').fill(String(value));
+    await page.getByTestId('next-button').click();
+  } else await page.getByTestId(`option-${value}`).click();
   await expect.poll(()=>card.getAttribute('data-question-id',{timeout:300}).catch(()=>null)).not.toBe(before);
 }
 async function walk(page,overrides={},unknown=false) {
@@ -105,6 +119,55 @@ test('closed and unknown paths finish without treating unknown as no',async({pag
   await expect(page.getByTestId('question-card')).toHaveAttribute('data-question-id','purpose');
   await walk(page,{},true);
   await expect(page.getByTestId('results')).toContainText('추가 확인 필요');
+});
+test('single choices advance immediately and previous question restores an answer for correction',async({page})=>{
+  await page.goto('./');
+  const card=page.getByTestId('question-card');
+  await expect(page.getByTestId('back-button')).toBeDisabled();
+  await page.getByTestId('option-operations').click();
+  await page.getByTestId('option-equipment').click();
+  // A multi-select question must wait until both choices have been confirmed.
+  await expect(card).toHaveAttribute('data-question-id','purpose');
+  await expect(page.getByTestId('option-operations')).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByTestId('option-equipment')).toHaveAttribute('aria-pressed','true');
+  await page.getByTestId('next-button').click();
+  await expect(card).toHaveAttribute('data-question-id','businessStatus');
+  await expect(page.getByTestId('next-button')).toHaveCount(0);
+  await page.getByTestId('option-active').click();
+  await expect(card).toHaveAttribute('data-question-id','exclusionStatus');
+  await expect(page.locator('.answer-list li').filter({has:page.getByTestId('edit-businessStatus')})).toContainText('영업 중');
+
+  await page.getByTestId('back-button').click();
+  await expect(card).toHaveAttribute('data-question-id','businessStatus');
+  await expect(page.getByTestId('option-active')).toHaveAttribute('aria-pressed','true');
+  await page.getByTestId('back-button').click();
+  await expect(card).toHaveAttribute('data-question-id','purpose');
+  await expect(page.getByTestId('option-operations')).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByTestId('option-equipment')).toHaveAttribute('aria-pressed','true');
+  await page.getByTestId('next-button').click();
+  await expect(card).toHaveAttribute('data-question-id','businessStatus');
+
+  // Keyboard activation has the same one-step behavior as clicking.
+  await page.getByTestId('option-closed').focus();
+  await page.keyboard.press('Enter');
+  const results=page.getByTestId('results');
+  await expect(results).toContainText('현재 답변에 맞는 후보가 없어요.');
+  await expect(results.locator('.fund-result')).toHaveCount(0);
+  await expect(page.getByTestId('edit-exclusionStatus')).toHaveCount(0);
+  await page.getByTestId('back-button').click();
+  await expect(card).toHaveAttribute('data-question-id','businessStatus');
+  await expect(page.getByTestId('option-closed')).toHaveAttribute('aria-pressed','true');
+  await page.getByTestId('option-unknown').click();
+  await expect(card).toHaveAttribute('data-question-id','businessStatusConfirm');
+  await page.getByTestId('option-unknown').click();
+  await expect(card).toHaveAttribute('data-question-id','exclusionStatus');
+  await expect(page.locator('.answer-list li').filter({has:page.getByTestId('edit-businessStatusConfirm')})).toContainText('모름');
+  await page.getByTestId('back-button').click();
+  await expect(card).toHaveAttribute('data-question-id','businessStatusConfirm');
+  await expect(page.getByTestId('option-unknown')).toHaveAttribute('aria-pressed','true');
+  await page.getByTestId('option-active').click();
+  await expect(card).toHaveAttribute('data-question-id','exclusionStatus');
+  await expect(page.locator('.answer-list li').filter({has:page.getByTestId('edit-businessStatusConfirm')})).toContainText('영업 중');
 });
 test('mobile visitors can complete the consultation with no horizontal overflow',async({page})=>{
   await page.setViewportSize({width:390,height:844});await page.goto('./');

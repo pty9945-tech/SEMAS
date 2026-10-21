@@ -41,9 +41,15 @@ test('visitors can download the standalone HTML and ZIP', async ({ page, browser
     await expect(document.getByTestId('html-download-link')).toHaveAttribute('href', release.downloadUrl);
     await document.getByTestId('option-operations').click();
     await document.getByTestId('next-button').click();
+    await expect(document.getByTestId('question-card')).toHaveAttribute('data-question-id', 'businessStatus');
+    await expect(document.getByTestId('next-button')).toHaveCount(0);
     await document.getByTestId('option-closed').click();
-    await document.getByTestId('next-button').click();
     await expect(document.getByTestId('results')).toBeVisible();
+    await document.getByTestId('back-button').click();
+    await expect(document.getByTestId('question-card')).toHaveAttribute('data-question-id', 'businessStatus');
+    await expect(document.getByTestId('option-closed')).toHaveAttribute('aria-pressed', 'true');
+    await document.getByTestId('option-active').click();
+    await expect(document.getByTestId('question-card')).toHaveAttribute('data-question-id', 'exclusionStatus');
     expect(requests).toEqual([]);
     expect(errors).toEqual([]);
   } finally {

@@ -41,6 +41,8 @@
 .offline-update-note a { margin-left: 3px; }
 .consult-intro { padding: 23px 0 22px; }
 .consult-intro.is-result { display: none; }
+.question-card, .results { scroll-margin-top: 16px; }
+.result-toolbar { flex-wrap: wrap; }
 .app-version-info + .consult-intro.is-result { margin-bottom: 15px; }
 .app-version-info { margin-bottom: 14px; }
 .consult-intro h1 { font-size: 27px; margin-bottom: 7px; }
