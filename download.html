@@ -14,6 +14,8 @@
       .eyebrow { margin: 0 0 8px; color: #426f5b; font-size: 14px; font-weight: 700; }
       h1 { margin: 0 0 16px; font-size: clamp(25px, 5vw, 34px); line-height: 1.4; letter-spacing: -.05em; }
       .intro { margin: 0 0 28px; color: #51665e; }
+      .version { padding: 13px 17px; margin: 0 0 22px; border: 1px solid #d8e7ed; border-radius: 12px; background: #f2f8fa; color: #3c5b66; font-size: 13px; }
+      .version p { margin: 2px 0; }
       .download { display: flex; justify-content: center; align-items: center; gap: 10px; min-height: 58px; padding: 14px 20px; border: 1px solid #35644d; border-radius: 14px; background: #35644d; color: #fff; text-align: center; text-decoration: none; font-size: 17px; font-weight: 700; }
       .download:hover { background: #294f3c; }
       .secondary { margin-top: 12px; border-color: #ceded4; background: #f1f7f3; color: #315d47; font-size: 15px; }
@@ -38,6 +40,11 @@
       <p class="eyebrow">동작센터 정책자금 상담 도우미</p>
       <h1>파일 하나로,<br />편하게 상담하세요.</h1>
       <p class="intro">아래 버튼을 누르면 상담 도우미를 HTML 파일로 내려받습니다. 설치나 로그인 없이 웹브라우저에서 사용할 수 있어요.</p>
+      <div class="version" data-testid="download-version">
+        <p><strong>파일 버전 2026.10.21.1</strong> · 화면 개편일 2026-10-21</p>
+        <p>2026년 정책자료 · 자료 확인일 2026-10-15</p>
+        <p>화면 개편일은 정책 공고의 갱신일이 아닙니다.</p>
+      </div>
       <a class="download" href="./downloads/dongjak-policy-helper.html" download="동작센터-정책자금-상담-도우미.html">
         <svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M5 17v4h14v-4" /></svg>
         HTML 파일 받기
