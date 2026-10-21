@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 export default defineConfig(({ mode }) => ({
   base: './',
-  define: { __PUBLIC_SITE__: JSON.stringify(mode !== 'private') },
+  define: { __PUBLIC_SITE__: JSON.stringify(mode !== 'private'), __STANDALONE_HTML__: 'false' },
   plugins: [react()],
   server: {
     host: "0.0.0.0",

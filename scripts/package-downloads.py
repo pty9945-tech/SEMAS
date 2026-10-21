@@ -4,6 +4,8 @@
 from pathlib import Path
 from shutil import copyfile
 from zipfile import ZIP_DEFLATED, ZipFile
+from html import escape
+import json
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -37,7 +39,13 @@ def main() -> None:
         ):
             raise SystemExit("ZIP 파일의 내용 검증에 실패했습니다.")
 
-    copyfile(TEMPLATE, DIST / "download.html")
+    metadata_path = ROOT / "dist-html" / "release.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    page = TEMPLATE.read_text(encoding="utf-8")
+    for key in ("version", "releasedAt", "policyYear", "policyVerifiedAt"):
+        page = page.replace("{{" + key + "}}", escape(str(metadata[key])))
+    (DIST / "download.html").write_text(page, encoding="utf-8")
+    copyfile(metadata_path, DOWNLOADS / "release.json")
     print(f"HTML 다운로드: {html_path.relative_to(ROOT)} ({html_path.stat().st_size:,} bytes)")
     print(f"ZIP 다운로드: {zip_path.relative_to(ROOT)} ({zip_path.stat().st_size:,} bytes)")
     print("다운로드 안내 페이지: dist/download.html")

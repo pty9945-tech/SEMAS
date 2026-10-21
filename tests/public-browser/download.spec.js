@@ -2,8 +2,11 @@ import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
 test('visitors can download the standalone HTML and ZIP', async ({ page, browser }) => {
+  const release = JSON.parse(await readFile(new URL('../../policy/release.json', import.meta.url), 'utf8'));
   await page.goto('./download.html');
   await expect(page).toHaveTitle('동작센터 정책자금 상담 도우미 · HTML 다운로드');
+  await expect(page.getByTestId('download-version')).toContainText(release.version);
+  await expect(page.getByTestId('download-version')).toContainText('자료 확인일 2026-10-15');
   const [htmlDownload] = await Promise.all([
     page.waitForEvent('download'),
     page.getByRole('link', { name: 'HTML 파일 받기', exact: true }).click(),
@@ -33,6 +36,9 @@ test('visitors can download the standalone HTML and ZIP', async ({ page, browser
     document.on('pageerror', (error) => errors.push(error.message));
     await document.setContent(html);
     await expect(document.getByTestId('question-card')).toHaveAttribute('data-question-id', 'purpose');
+    await expect(document.getByTestId('app-version-info')).toHaveAttribute('data-edition', 'offline');
+    await expect(document.getByTestId('offline-update-note')).toContainText('자동 업데이트되지 않아요');
+    await expect(document.getByTestId('html-download-link')).toHaveAttribute('href', release.downloadUrl);
     await document.getByTestId('option-operations').click();
     await document.getByTestId('next-button').click();
     await document.getByTestId('option-closed').click();

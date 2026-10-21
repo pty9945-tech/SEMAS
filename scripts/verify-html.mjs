@@ -10,6 +10,7 @@ const htmlPath = resolve(root, 'dist-html/동작센터-정책자금-상담-도�
 assert.ok(existsSync(htmlPath), 'Run npm run build:html before verifying the HTML export.');
 const htmlUrl = pathToFileURL(htmlPath).href;
 const html = await readFile(htmlPath, 'utf8');
+const release = JSON.parse(await readFile(resolve(root, 'policy/release.json'), 'utf8'));
 const siteName = '동작센터 정책자금 상담 도우미';
 const assumption = '소상공인 기본요건 충족을 전제로 상담합니다.';
 // Keep these representative answers aligned with tests/public-browser/public.spec.js.
@@ -132,6 +133,10 @@ try {
   await page.addInitScript(installPrivacyProbe);
   page = await openHtml(page);
   await expect(page).toHaveTitle(siteName);
+  await expect(page.getByTestId('app-version-info')).toHaveAttribute('data-edition', 'offline');
+  await expect(page.getByTestId('app-version-info')).toContainText(release.version);
+  await expect(page.getByTestId('offline-update-note')).toContainText('자동 업데이트되지 않아요');
+  await expect(page.getByTestId('html-download-link')).toHaveAttribute('href', release.downloadUrl);
   await expect(page.getByTestId('question-card')).toHaveAttribute('data-question-id', 'purpose');
   await expect(page.getByTestId('assumption-notice').first()).toContainText(assumption);
   await expect(page.getByTestId('option-related-operations')).toContainText('일반경영안정자금');

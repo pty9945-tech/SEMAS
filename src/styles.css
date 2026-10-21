@@ -1239,7 +1239,7 @@ form label:not(:first-child) {
   color: #9aaa8e;
   margin-bottom: 8px;
 }
-.results-intro h2 {
+.results-intro h1 {
   font-size: 25px;
   font-weight: 650;
   margin-bottom: 9px;
@@ -1916,7 +1916,7 @@ form label:not(:first-child) {
     margin-left: 0;
     width: 100%;
   }
-  .results-intro h2 {
+  .results-intro h1 {
     font-size: 22px;
   }
 }
@@ -2215,7 +2215,7 @@ form label:not(:first-child) {
   .results-intro {
     padding: 26px 17px 23px;
   }
-  .results-intro h2 {
+  .results-intro h1 {
     font-size: 23px;
   }
   .result-toolbar .secondary-button,
@@ -2457,7 +2457,7 @@ form label:not(:first-child) {
   .results-intro .eyebrow {
     display: none;
   }
-  .results-intro h2 {
+  .results-intro h1 {
     font-size: 21px;
   }
   .fund-result {

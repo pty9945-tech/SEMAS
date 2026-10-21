@@ -1,0 +1,99 @@
+.header-download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  margin-left: auto;
+  padding: 10px 14px;
+  border: 1px solid #c7ded2;
+  border-radius: 11px;
+  color: #2e634d;
+  background: #f0f7f3;
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.header-download:hover { background: #e5f1ea; }
+.app-version-info {
+  margin: 12px 0 0;
+  color: #52685f;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.version-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; }
+.version-meta strong { font-weight: 600; }
+.version-help > summary { cursor: pointer; color: #3e6b58; text-underline-offset: 3px; }
+.version-help[open] { flex-basis: 100%; }
+.version-help > div {
+  margin-top: 7px;
+  padding: 12px 15px;
+  max-width: 660px;
+  border: 1px solid #d9e5de;
+  border-radius: 10px;
+  background: #fffefa;
+}
+.version-help p { margin: 0 0 5px; }
+.version-help a, .offline-update-note a { color: #295e48; text-underline-offset: 3px; }
+.offline-update-note { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; margin: 8px 0 0; }
+.offline-update-note svg { flex-shrink: 0; }
+.offline-update-note a { margin-left: 3px; }
+.consult-intro { padding: 23px 0 22px; }
+.consult-intro.is-result { display: none; }
+.app-version-info + .consult-intro.is-result { margin-bottom: 15px; }
+.app-version-info { margin-bottom: 14px; }
+.consult-intro h1 { font-size: 27px; margin-bottom: 7px; }
+.workflow-strip { margin-bottom: 16px; }
+.summary-empty-compact { margin: 12px 0 17px; color: #586c60; font-size: 13px; line-height: 1.7; }
+.candidate-card .side-description { color: #596e61; line-height: 1.7; margin-bottom: 12px; }
+.candidate-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #d5e4d9;
+  border-radius: 9px;
+  background: #f1f7f2;
+  color: #365c47;
+  font-size: 13px;
+  text-align: left;
+}
+.candidate-toggle svg { flex-shrink: 0; }
+.candidate-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.candidate-list { margin-top: 12px; }
+.candidate-list[hidden] { display: none !important; }
+.candidate-excluded { margin-top: 5px; }
+.candidate-excluded > summary { cursor: pointer; padding: 8px 0; font-size: 12px; color: #645c53; }
+.candidate-excluded .candidate-item { margin-top: 8px; }
+.candidate-note { padding-top: 12px; margin-top: 14px; }
+.option-funds { padding: 8px 14px 10px; font-size: 12px; background: #fbfcfa; color: #52675a; }
+.option-funds-label { font-weight: 500; color: #607165; }
+.option-fund-list { margin-top: 4px; }
+.option-funds-more { margin-top: 4px; }
+.option-button .option-text strong { color: #304f3f; font-size: 15px; }
+.option-text > span { color: #596e60; }
+.assumption-notice { padding: 11px 15px; }
+.result-notice-line, .result-scope-note > p { font-size: 13px; color: #52685c; line-height: 1.8; }
+.result-scope-note { margin-top: 20px; }
+.header-download:focus-visible, .candidate-toggle:focus-visible, .version-help summary:focus-visible {
+  outline: 2px solid #32654e;
+  outline-offset: 3px;
+}
+@media (max-width: 680px) {
+  .public-header nav { display: none; }
+  .header-download { font-size: 12px; padding: 8px 10px; gap: 5px; }
+  .consult-intro { padding: 18px 0; }
+  .consult-intro h1 { font-size: 23px; }
+  .version-meta { gap: 3px 12px; }
+  .app-version-info { font-size: 11px; }
+  .option-funds { padding: 8px 10px 10px; }
+  .option-button .option-text strong { font-size: 14px; }
+}
+@media print {
+  .app-version-info { font-size: 10px; margin: 0 0 12px; }
+  .version-help, .offline-update-note { display: none; }
+}

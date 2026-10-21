@@ -1,0 +1,169 @@
+.result-focus {
+  margin-top: 18px;
+}
+.followup-checklist {
+  margin: 0 0 20px;
+  padding: 23px;
+  background: #f1f7fa;
+  border: 1px solid #d5e5ed;
+  border-radius: 18px;
+}
+.followup-checklist h3 {
+  margin: 0 0 8px;
+  color: #284e61;
+  font-size: 18px;
+  line-height: 1.5;
+}
+.followup-checklist h3 span {
+  display: inline-block;
+  margin-left: 7px;
+  padding: 1px 8px;
+  border-radius: 20px;
+  background: #dcecf4;
+  font-size: 13px;
+}
+.followup-checklist > p {
+  margin: 0 0 17px;
+  color: #425e6b;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.followup-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.followup-list > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 15px 0;
+  border-top: 1px solid #d8e6ec;
+  color: #314d5c;
+}
+.followup-list > li > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.followup-square {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid #66899a;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+.followup-list h4 {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  font-weight: 650;
+}
+.followup-list p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.followup-list .followup-funds {
+  color: #4a6876;
+}
+.followup-evidence > summary,
+.followup-more > summary {
+  cursor: pointer;
+  color: #315d72;
+  font-size: 13px;
+  line-height: 1.8;
+  margin-top: 9px;
+}
+.followup-more > summary {
+  font-weight: 650;
+  padding-top: 7px;
+}
+.followup-evidence .evidence {
+  color: #526d7a;
+}
+.fund-summary {
+  margin: 18px 0;
+  padding: 17px;
+  border: 1px solid #e0e9e3;
+  border-radius: 12px;
+  background: #f7faf7;
+  color: #355744;
+  overflow-wrap: anywhere;
+}
+.fund-summary h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 7px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.fund-summary p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.85;
+}
+.fund-why-list {
+  margin: 11px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.fund-why-list li + li {
+  margin-top: 7px;
+}
+.fund-why-list p {
+  color: #536a5b;
+}
+.fund-next {
+  margin-top: 15px;
+  padding-top: 13px;
+  border-top: 1px solid #dce7df;
+}
+.fund-next ul {
+  margin: 7px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.85;
+}
+.fund-next .next-more {
+  margin-top: 7px;
+  color: #596d61;
+}
+.fund-result .fund-description {
+  margin-bottom: 10px;
+}
+.fund-result .reception-row {
+  margin-top: 17px;
+}
+.fund-terms > .term-grid {
+  margin-top: 0;
+}
+@media (max-width: 600px) {
+  .followup-checklist { padding: 18px; }
+  .followup-checklist h3 { font-size: 17px; }
+  .fund-summary { padding: 14px; }
+}
+@media print {
+  .followup-checklist,
+  .fund-summary {
+    background: #fff;
+    color: #111;
+    border-color: #aaa;
+    padding: 12px;
+  }
+  .followup-checklist h3,
+  .followup-checklist p,
+  .followup-list,
+  .followup-list .followup-funds,
+  .followup-evidence .evidence,
+  .followup-more > summary,
+  .followup-evidence > summary,
+  .fund-why-list p,
+  .fund-next .next-more { color: #222; }
+  .followup-list > li { break-inside: avoid; }
+  .followup-square { border-color: #666; }
+  .followup-more:not([open]) > :not(summary),
+  .followup-evidence:not([open]) > :not(summary) { display: block !important; }
+}

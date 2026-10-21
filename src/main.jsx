@@ -1,7 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { SITE_CENTER, SITE_NAME, SITE_SUBTITLE } from "../policy/branding.js";
+import release from "../policy/release.json";
+import { buildResultSummary } from "./result-summary.js";
 import "./styles.css";
+import "./consultation-improvements.css";
+import "./result-improvements.css";
 
 function Icon({ name = "leaf", size = 20, ...props }) {
   const paths = {
@@ -157,6 +161,8 @@ const REASON_LABELS = {
 };
 const DEFAULT_NOTICE = "2026년 제공 자료 기준 · 접수 현황 별도 확인";
 const PUBLIC_SITE = __PUBLIC_SITE__;
+const STANDALONE_HTML = __STANDALONE_HTML__;
+const DOWNLOAD_URL = STANDALONE_HTML ? release.downloadUrl : "./download.html";
 async function request(path, options = {}) {
   if (PUBLIC_SITE) {
     const { publicRequest } = await import('./public-api.js');
@@ -230,15 +236,40 @@ function AssumptionNotice({ meta }) {
       <Icon name="info" size={18} />
       <div>
         <strong>상담 전제 · 소상공인 기본요건 충족</strong>
-        <p>{meta.assumptionNotice} {meta.assumptionDetails}</p>
+        <p>{meta.assumptionNotice}</p>
         {meta.assumedRequirements?.length > 0 && (
           <details className="assumption-details">
-            <summary>가정한 기본요건 보기</summary>
+            <summary>전제와 별도 확인사항 보기</summary>
+            <p>{meta.assumptionDetails}</p>
             <ul>{meta.assumedRequirements.map((item) => <li key={item}>{item}</li>)}</ul>
           </details>
         )}
       </div>
     </aside>
+  );
+}
+function VersionInfo({ meta }) {
+  return (
+    <div className="app-version-info" data-testid="app-version-info" data-edition={STANDALONE_HTML ? "offline" : "web"}>
+      <div className="version-meta">
+        <span>{STANDALONE_HTML ? "HTML 파일" : "웹사이트"} 버전 <strong>{release.version}</strong></span>
+        <span>정책자료 확인일 <time>{meta?.verifiedAt || "미확인"}</time></span>
+        <details className="version-help">
+          <summary>버전 안내</summary>
+          <div>
+            <p>화면 버전과 정책자료 확인일은 달라요. 접수·예산과 이후 변경 공고는 공식 자료에서 확인해 주세요.</p>
+            <p>HTML 파일은 자동 업데이트되지 않아요. 공고가 바뀌면 갱신된 파일을 받아주세요.</p>
+            {PUBLIC_SITE && <a href={DOWNLOAD_URL} target="_blank" rel="noreferrer">최신 배포 파일 확인</a>}
+          </div>
+        </details>
+      </div>
+      {STANDALONE_HTML && (
+        <p className="offline-update-note" data-testid="offline-update-note">
+          <Icon name="info" size={14} /> 이 파일은 자동 업데이트되지 않아요.
+          <a href={release.downloadUrl} target="_blank" rel="noreferrer">새 파일 확인 · 인터넷 필요</a>
+        </p>
+      )}
+    </div>
   );
 }
 function Login({ onLogin, notice }) {
@@ -489,13 +520,7 @@ function Summary({ evaluation, busy, onEdit }) {
         <span className="count-chip">{evaluation.answered.length}</span>
       </div>
       {evaluation.answered.length === 0 ? (
-        <div className="empty-summary">
-          <span className="empty-summary-icon">
-            <Icon name="edit" size={24} />
-          </span>
-          <p>선택한 내용이 여기에 모여요.</p>
-          <span>언제든 다시 눌러 수정할 수 있어요.</span>
-        </div>
+        <p className="summary-empty-compact">선택한 답변을 여기서 확인하고 수정할 수 있어요.</p>
       ) : (
         <ol className="answer-list">
           {evaluation.answered.map((answer, index) => (
@@ -521,15 +546,33 @@ function Summary({ evaluation, busy, onEdit }) {
           ))}
         </ol>
       )}
-      <p className="summary-footnote">
+      {evaluation.answered.length > 0 && <p className="summary-footnote">
         <Icon name="info" size={13} />
         답변을 바꾸면 이후 질문을 다시 확인해요.
-      </p>
+      </p>}
     </section>
   );
 }
-function CandidateSidebar({ candidates }) {
-  const active = candidates.filter((c) => c.status !== "ineligible").length;
+function CandidateSidebar({ candidates, answeredCount, complete }) {
+  const active = candidates.filter((c) => c.status !== "ineligible");
+  const excluded = candidates.filter((c) => c.status === "ineligible");
+  const [userExpanded, setUserExpanded] = useState(null);
+  useEffect(() => {
+    if (answeredCount === 0) setUserExpanded(null);
+  }, [answeredCount]);
+  const expanded = userExpanded ?? (complete || answeredCount >= 4 || (answeredCount > 0 && active.length <= 3));
+  const renderCandidate = (fund) => (
+    <details className={`candidate-item ${fund.status === "ineligible" ? "muted" : ""}`} key={fund.id}>
+      <summary>
+        <span className="candidate-title">{fund.name}</span>
+        <span className="candidate-bottom"><Badge status={fund.status} /><Icon name="chevron" size={15} /></span>
+      </summary>
+      <div className="candidate-details">
+        <ReasonList compact reasons={fund.reasons.filter((r) => r.status !== "unanswered")} />
+        {fund.reasons.every((r) => r.status === "unanswered") && <p>질문에 답하면 조건을 하나씩 확인해요.</p>}
+      </div>
+    </details>
+  );
   return (
     <section className="side-card candidate-card">
       <div className="side-heading">
@@ -537,35 +580,24 @@ function CandidateSidebar({ candidates }) {
           <Icon name="leaf" size={18} />
           검토 중인 후보
         </h2>
-        <span className="count-chip mint">{active}</span>
+        <span className="count-chip mint">{active.length}</span>
       </div>
       <p className="side-description">
-        답변에 따라 후보와 확인사항이 달라져요.
+        {answeredCount === 0 ? "아직 요건을 판단하기 전이에요. 답변에 따라 후보가 정리돼요." : `후보 ${active.length}개 · 입력 기준상 요건 미충족 ${excluded.length}개`}
       </p>
-      <div className="candidate-list">
-        {candidates.map((fund) => (
-          <details
-            className={`candidate-item ${fund.status === "ineligible" ? "muted" : ""}`}
-            key={fund.id}
-          >
-            <summary>
-              <span className="candidate-title">{fund.name}</span>
-              <span className="candidate-bottom">
-                <Badge status={fund.status} />
-                <Icon name="chevron" size={15} />
-              </span>
-            </summary>
-            <div className="candidate-details">
-              <ReasonList
-                compact
-                reasons={fund.reasons.filter((r) => r.status !== "unanswered")}
-              />
-              {fund.reasons.every((r) => r.status === "unanswered") && (
-                <p>질문에 답하면 조건을 하나씩 확인해요.</p>
-              )}
-            </div>
+      <button className="candidate-toggle" type="button" data-testid="candidate-toggle" aria-expanded={expanded} aria-controls="candidate-list" onClick={() => setUserExpanded(!expanded)}>
+        {expanded ? "목록 접기" : `후보 ${active.length}개와 미충족 이유 보기`}
+        <Icon name="chevron" size={16} />
+      </button>
+      <div className="candidate-list" id="candidate-list" data-testid="candidate-list" hidden={!expanded}>
+        {active.map(renderCandidate)}
+        {active.length === 0 && <p className="side-description">현재 답변에 맞는 후보가 없어요.</p>}
+        {excluded.length > 0 && (
+          <details className="candidate-excluded" data-testid="candidate-excluded">
+            <summary>입력 기준상 요건 미충족 {excluded.length}개</summary>
+            {excluded.map(renderCandidate)}
           </details>
-        ))}
+        )}
       </div>
       <div className="candidate-note">
         <Icon name="info" size={15} />
@@ -795,7 +827,7 @@ function Question({ evaluation, draft, setDraft, onNext, onBack, busy }) {
     </section>
   );
 }
-function FundResult({ fund }) {
+function FundResult({ fund, summary }) {
   return (
     <article className="fund-result">
       <div className="fund-result-top">
@@ -807,28 +839,76 @@ function FundResult({ fund }) {
           <h3>{fund.name}</h3>
         </div>
       </div>
-      <p className="fund-description">{fund.description}</p>
-      <div className="term-grid">
-        {[
-          ["limit", "대출 한도"],
-          ["rate", "대출 금리"],
-          ["period", "대출 기간"],
-        ].map(([key, label]) => (
-          <div key={key}>
-            <span>{label}</span>
-            <strong>
-              {fund.terms?.[key] || "확인 필요 · 해당 자금 신청안내 확인"}
-            </strong>
-          </div>
-        ))}
-      </div>
-      <p className="terms-note">유형별 한도·금리·기간이 다를 수 있어요. 표시된 최대한도는 모든 신청자에게 적용되지 않아요.</p>
-      {fund.cautions?.length > 0 && (
-        <div className="fund-cautions">
-          <h4><Icon name="info" size={15} /> 함께 확인할 사항</h4>
-          <ul>{fund.cautions.map((item, index) => <li key={index}>{item}</li>)}</ul>
+      <section className="fund-summary" data-testid={`fund-summary-${fund.id}`}>
+        <h4><Icon name="check" size={16} /> 후보로 남은 이유</h4>
+        <p>
+          {summary.metReasons.length > 0
+            ? `입력한 답변에서 ${summary.metReasons.length}개 조건의 충족을 확인했어요.${summary.remainingReasons.length ? ` ${summary.remainingReasons.length}개 조건은 추가 확인이 필요해요.` : ""}`
+            : "아직 충족을 확인한 조건이 없어요. 확인하지 못한 항목을 남겨 두고 검토하고 있어요."}
+        </p>
+        {summary.previewReasons.length > 0 && (
+          <ul className="fund-why-list">
+            {summary.previewReasons.map((reason) => (
+              <li key={reason.conditionId}>
+                <strong>{reason.label}</strong>
+                {reason.answerLabel && <p>사용한 답변: {reason.answerLabel}</p>}
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="fund-next">
+          <h4><Icon name="help" size={16} /> 다음 확인사항</h4>
+          {summary.remainingReasons.length > 0 ? (
+            <>
+              <ul>
+                {summary.remainingReasons.slice(0, 2).map((reason) => (
+                  <li key={reason.conditionId}>{reason.label}</li>
+                ))}
+              </ul>
+              {summary.remainingReasons.length > 2 && (
+                <p className="next-more">외 {summary.remainingReasons.length - 2}개 항목은 위 확인 목록과 아래 판단 근거에서 볼 수 있어요.</p>
+              )}
+              <p className="next-more">자료를 확인한 뒤 해당 답변을 수정해 다시 검토해 주세요.</p>
+            </>
+          ) : <p>공식 신청안내의 제출서류로 답변을 확인하고, 현재 접수·예산 상황을 확인해 주세요.</p>}
         </div>
-      )}
+      </section>
+      <div className="reception-row">
+        <span>현재 접수 상태</span>
+        <strong>
+          <Icon name="help" size={14} />
+          {fund.applicationStatus?.label || "확인 필요"}
+        </strong>
+        <small>자격 요건과 별도로 확인해 주세요.</small>
+      </div>
+      <details className="result-details fund-terms" data-testid={`fund-terms-${fund.id}`}>
+        <summary>
+          한도 · 금리 · 기간 · 유의사항
+          <Icon name="chevron" size={16} />
+        </summary>
+        <p className="fund-description">{fund.description}</p>
+        <div className="term-grid">
+          {[
+            ["limit", "대출 한도"],
+            ["rate", "대출 금리"],
+            ["period", "대출 기간"],
+          ].map(([key, label]) => (
+            <div key={key}>
+              <span>{label}</span>
+              <strong>
+                {fund.terms?.[key] || "확인 필요 · 해당 자금 신청안내 확인"}
+              </strong>
+            </div>
+          ))}
+        </div>
+        <p className="terms-note">유형별 한도·금리·기간이 다를 수 있어요. 표시된 최대한도는 모든 신청자에게 적용되지 않아요.</p>
+        {fund.cautions?.length > 0 && (
+          <div className="fund-cautions">
+            <h4><Icon name="info" size={15} /> 함께 확인할 사항</h4>
+            <ul>{fund.cautions.map((item, index) => <li key={index}>{item}</li>)}</ul>
+          </div>
+        )}
+      </details>
       {fund.policyDetails?.length > 0 && (
         <details className="result-details policy-details" data-testid={`policy-details-${fund.id}`}>
           <summary>
@@ -847,22 +927,14 @@ function FundResult({ fund }) {
           </div>
         </details>
       )}
-      <div className="reception-row">
-        <span>현재 접수 상태</span>
-        <strong>
-          <Icon name="help" size={14} />
-          {fund.applicationStatus?.label || "확인 필요"}
-        </strong>
-        <small>자격 요건과 별도로 확인해 주세요.</small>
-      </div>
-      <details className="result-details" open>
+      <details className="result-details" data-testid={`fund-reasons-${fund.id}`}>
         <summary>
           판단에 사용된 답변과 확인사항
           <Icon name="chevron" size={16} />
         </summary>
         <ReasonList reasons={fund.reasons} />
       </details>
-      <details className="result-details">
+      <details className="result-details" data-testid={`fund-resources-${fund.id}`}>
         <summary>
           필요 서류 · 신청 절차 · 근거 자료
           <Icon name="chevron" size={16} />
@@ -945,12 +1017,32 @@ function FundResult({ fund }) {
     </article>
   );
 }
-function Results({ evaluation, catalog, onCopy, onPrint, onRestart, busy }) {
+function Results({ evaluation, catalog, onCopy, onPrint, onRestart, onGuide, busy }) {
+  const summary = buildResultSummary(evaluation);
   const candidates = evaluation.candidates.filter(
     (c) => c.status !== "ineligible",
   );
   const excluded = evaluation.candidates.filter(
     (c) => c.status === "ineligible",
+  );
+  const followupItem = (item) => (
+    <li key={item.conditionId} data-testid={`followup-item-${item.conditionId}`}>
+      <span className="followup-square" aria-hidden="true" />
+      <div>
+        <h4>{item.label}</h4>
+        <p className="followup-funds">
+          관련 자금: {item.funds.slice(0, 2).map((fund) => fund.name).join(" · ")}
+          {item.funds.length > 2 ? ` 외 ${item.funds.length - 2}개` : ""}
+        </p>
+        <details className="followup-evidence">
+          <summary>선택한 답변 · 관련 자금 · 근거 보기</summary>
+          <p>상태: {REASON_LABELS[item.status]}</p>
+          {item.answerLabel && <p>선택한 답변: {item.answerLabel}</p>}
+          <p>관련 자금 전체: {item.funds.map((fund) => fund.name).join(" · ")}</p>
+          <Evidence evidence={item.evidence} />
+        </details>
+      </div>
+    </li>
   );
   return (
     <section className="results" data-testid="results">
@@ -960,7 +1052,7 @@ function Results({ evaluation, catalog, onCopy, onPrint, onRestart, busy }) {
           <Icon name={candidates.length ? "check" : "help"} size={25} />
         </span>
         <p className="eyebrow">선택한 내용을 함께 정리했어요</p>
-        <h2>
+        <h1>
           {candidates.length ? (
             <>
               검토할 후보가 <em>{candidates.length}개</em> 있어요.
@@ -968,10 +1060,10 @@ function Results({ evaluation, catalog, onCopy, onPrint, onRestart, busy }) {
           ) : (
             "현재 답변에 맞는 후보가 없어요."
           )}
-        </h2>
+        </h1>
         <p>
           {candidates.length
-            ? "충족한 조건과 추가로 확인할 내용을 살펴보세요."
+            ? "후보로 남은 이유와 다음에 확인할 내용을 먼저 살펴보세요."
             : "아래 미충족 이유를 확인하고, 입력 내용이 맞는지 다시 살펴보세요."}
         </p>
         <div className="result-toolbar">
@@ -991,23 +1083,32 @@ function Results({ evaluation, catalog, onCopy, onPrint, onRestart, busy }) {
             <Icon name="reset" size={16} />
             다시 상담하기
           </button>
+          <button className="text-button" onClick={onGuide}>
+            <Icon name="help" size={16} />
+            이용 안내
+          </button>
         </div>
       </div>
       <AssumptionNotice meta={catalog.meta} />
-      <div className="result-warning">
-        <Icon name="info" size={18} />
-        <div>
-          <strong>{catalog.meta.notice || DEFAULT_NOTICE}</strong>
-          <p>
-            {catalog.meta.finalNotice ||
-              "최종 지원 여부는 공식 요건 심사와 접수 상황에 따라 결정됩니다."}
-          </p>
-        </div>
+      <p className="result-notice-line">제공 자료의 {catalog.funds.length}개 자금을 검토합니다. 최종 지원 여부는 심사 및 접수 상황에 따라 결정됩니다.</p>
+      <div className="result-focus" data-testid="result-overview">
+        {summary.followups.length > 0 && (
+          <section className="followup-checklist" data-testid="followup-checklist" aria-labelledby="followup-title">
+            <h3 id="followup-title">다음에 확인할 항목 <span>{summary.followups.length}개</span></h3>
+            <p>여러 자금에 공통인 같은 조건은 한 번만 모았어요. 모르는 조건은 확인 필요로 남겨 두며, 자료 확인 후 답변을 수정해 주세요.</p>
+            <ul className="followup-list">{summary.followups.slice(0, 3).map(followupItem)}</ul>
+            {summary.followups.length > 3 && (
+              <details className="followup-more" data-testid="followup-more">
+                <summary>나머지 {summary.followups.length - 3}개 확인항목 펼치기</summary>
+                <ul className="followup-list">{summary.followups.slice(3).map(followupItem)}</ul>
+              </details>
+            )}
+          </section>
+        )}
+        {summary.funds.map((item) => (
+          <FundResult key={item.fund.id} fund={item.fund} summary={item} />
+        ))}
       </div>
-      {catalog.meta.coverage && <p className="coverage-note">{catalog.meta.coverage}</p>}
-      {candidates.map((fund) => (
-        <FundResult key={fund.id} fund={fund} />
-      ))}
       {excluded.length > 0 && (
         <section className="excluded-results">
           <h3>
@@ -1054,10 +1155,16 @@ function Results({ evaluation, catalog, onCopy, onPrint, onRestart, busy }) {
         ))}
       </section>
       <p className="result-data-note">
+        화면·파일 버전: {release.version} · {" "}
         적용 연도: {catalog.meta.year || "미확인"} · 데이터 확인일:{" "}
         {catalog.meta.verifiedAt || "미확인"} · 데이터 버전:{" "}
         {catalog.meta.datasetVersion || "미확인"}
       </p>
+      <details className="result-details result-scope-note">
+        <summary>검토 범위 · 최종 심사 안내<Icon name="chevron" size={16} /></summary>
+        <p>{catalog.meta.finalNotice || "최종 지원 여부는 공식 요건 심사와 접수 상황에 따라 결정됩니다."}</p>
+        {catalog.meta.coverage && <p>{catalog.meta.coverage}</p>}
+      </details>
     </section>
   );
 }
@@ -1213,8 +1320,10 @@ const resourceText = (item) =>
         .filter(Boolean)
         .join(" · ");
 function resultText(evaluation, catalog) {
+  const summary = buildResultSummary(evaluation);
   return [
     `${SITE_NAME} · 상담 결과`,
+    `화면·파일 버전: ${release.version} / 화면 개편일: ${release.releasedAt}`,
     catalog.meta.notice || DEFAULT_NOTICE,
     catalog.meta.coverage || "",
     `적용 연도: ${catalog.meta.year || "미확인"} / 자료 확인일: ${catalog.meta.verifiedAt || "미확인"}`,
@@ -1225,6 +1334,18 @@ function resultText(evaluation, catalog) {
       catalog.meta.assumptionDetails || "",
       ...(catalog.meta.assumedRequirements || []).map((item) => `- 가정한 요건: ${item}`),
     ] : []),
+    "",
+    "후보로 남은 이유",
+    ...(summary.funds.length ? summary.funds.flatMap((item) => [
+      `- ${item.fund.name}: 답변 기준 충족 ${item.metReasons.length}개 / 추가 확인 ${item.remainingReasons.length}개`,
+      ...item.previewReasons.map((reason) => `  · ${reason.label}${reason.answerLabel ? ` / 사용한 답변: ${reason.answerLabel}` : ""}`),
+      ...(item.metReasons.length === 0 ? ["  · 아직 충족을 확인한 조건이 없습니다. 미확인 항목 확인 후 다시 검토해야 합니다."] : []),
+    ]) : ["현재 답변에 맞는 후보가 없습니다. 아래 미충족 이유와 입력한 답변을 확인해 주세요."]),
+    "",
+    "다음 확인사항",
+    ...(summary.followups.length ? summary.followups.map((item) =>
+      `□ ${item.label} [${REASON_LABELS[item.status]}]\n  관련 자금: ${item.funds.map((fund) => fund.name).join(" / ")}${item.answerLabel ? `\n  선택한 답변: ${item.answerLabel}` : ""}\n  근거: ${resourceText(item.evidence || {}) || "미등록"}`,
+    ) : [summary.funds.length ? "공식 신청안내의 제출서류로 답변을 확인하고 현재 접수·예산 상황을 확인해 주세요." : "선택 내용을 다시 확인하고 공식 누리집에서 다른 자금·변경 공고를 확인해 주세요."]),
     "",
     "선택한 내용",
     ...evaluation.answered.map((a) => `- ${a.title}: ${a.answerLabel}`),
@@ -1494,7 +1615,7 @@ function App() {
       <a className="skip-link" href="#main-content">
         본문으로 바로가기
       </a>
-      <header className="app-header">
+      <header className={`app-header ${PUBLIC_SITE ? "public-header" : ""}`}>
         <div className="header-inner">
           <Brand />
           <nav aria-label="주요 메뉴">
@@ -1515,9 +1636,9 @@ function App() {
             )}
           </nav>
           {PUBLIC_SITE ? (
-            <span className="public-access-label">
-              <Icon name="leaf" size={16} /> 로그인 없이 바로 상담
-            </span>
+            <a className="header-download" data-testid="html-download-link" href={DOWNLOAD_URL} target="_blank" rel="noreferrer">
+              <Icon name="folder" size={16} />{STANDALONE_HTML ? "새 HTML 파일" : "HTML 파일 받기"}
+            </a>
           ) : <div className="user-menu">
             <span className="user-avatar">
               <Icon name="person" size={17} />
@@ -1539,6 +1660,7 @@ function App() {
       </header>
       <main className="app-main" id="main-content">
         <PolicyNotice meta={catalog?.meta} />
+        <VersionInfo meta={catalog?.meta} />
         {error && (
           <div className="global-error" role="alert">
             <Icon name="info" size={17} />
@@ -1561,12 +1683,8 @@ function App() {
           <Admin api={api} user={user} />
         ) : (
           <>
-            <section className="consult-intro">
+            <section className={`consult-intro${evaluation?.complete ? " is-result" : ""}`}>
               <div>
-                <span className="eyebrow">
-                  <span className="tiny-dot" />
-                  차근차근, 함께 찾는 정책자금
-                </span>
                 <h1>
                   {evaluation?.complete ? (
                     "상담 결과를 정리했어요."
@@ -1578,15 +1696,6 @@ function App() {
                   )}
                 </h1>
                 <p>한 번에 하나씩 선택하면, 검토할 자금이 정리돼요.</p>
-              </div>
-              <div className="intro-note">
-                <span className="intro-note-icon">
-                  <Icon name="leaf" size={26} />
-                </span>
-                <div>
-                  <strong>작은 선택이 모여, 알맞은 다음 걸음</strong>
-                  <span>모르는 항목은 ‘확인 필요’로 남겨도 괜찮아요.</span>
-                </div>
               </div>
             </section>
             {!evaluation || !catalog ? (
@@ -1632,6 +1741,7 @@ function App() {
                         onCopy={copy}
                         onPrint={print}
                         onRestart={() => evaluate({})}
+                        onGuide={() => setGuide(true)}
                         busy={busy}
                       />
                     ) : (
@@ -1672,7 +1782,7 @@ function App() {
                       busy={busy}
                       onEdit={edit}
                     />
-                    <CandidateSidebar candidates={evaluation.candidates} />
+                    <CandidateSidebar candidates={evaluation.candidates} answeredCount={answeredCount} complete={evaluation.complete} />
                     {!evaluation.complete && answeredCount > 0 && (
                       <button
                         className="restart-link"

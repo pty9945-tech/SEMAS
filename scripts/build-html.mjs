@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'vite';
 import react from '@vitejs/plugin-react';
+import { catalog } from '../policy/catalog.js';
 
 // Keep the ordinary website build unchanged. This separate build embeds the
 // public app, its policy rules, and its styles in a file that needs no server.
@@ -15,6 +16,7 @@ const result = await build({
   plugins: [react()],
   define: {
     __PUBLIC_SITE__: 'true',
+    __STANDALONE_HTML__: 'true',
     'process.env.NODE_ENV': JSON.stringify('production'),
   },
   build: {
@@ -74,4 +76,12 @@ const html = template
 
 await mkdir(dirname(outputPath), { recursive: true });
 await writeFile(outputPath, html);
+const release = JSON.parse(await readFile(resolve(root, 'policy/release.json'), 'utf8'));
+await writeFile(resolve(root, 'dist-html/release.json'), JSON.stringify({
+  version: release.version,
+  releasedAt: release.releasedAt,
+  policyYear: catalog.meta.year,
+  policyVerifiedAt: catalog.meta.verifiedAt,
+  datasetVersion: catalog.meta.datasetVersion,
+}, null, 2) + '\n');
 console.log(`Standalone HTML: ${outputPath} (${Buffer.byteLength(html).toLocaleString('en-US')} bytes)`);
