@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { SITE_CENTER, SITE_NAME, SITE_SUBTITLE } from "../policy/branding.js";
 import release from "../policy/release.json";
 import { buildResultSummary } from "./result-summary.js";
+import CreditGuide from "./CreditGuide.jsx";
 import "./styles.css";
 import "./consultation-improvements.css";
 import "./result-improvements.css";
@@ -1407,6 +1408,15 @@ function App() {
   const generation = useRef(0);
   const guideRef = useRef(null);
   const previousEvaluation = useRef(null);
+  const previousTab = useRef(tab);
+  useEffect(() => {
+    if (tab === "consult" && previousTab.current === "credit-guide") {
+      const content = document.querySelector(evaluation?.complete ? ".results" : ".question-card");
+      content?.scrollIntoView({ block: "start", behavior: "instant" });
+      content?.querySelector("h1, h2")?.focus({ preventScroll: true });
+    }
+    previousTab.current = tab;
+  }, [tab]);
   useEffect(() => {
     if (evaluation && previousEvaluation.current) {
       document.querySelector(evaluation.complete ? ".results" : ".question-card")?.scrollIntoView({ block: "start", behavior: "instant" });
@@ -1651,6 +1661,15 @@ function App() {
             >
               상담하기
             </button>
+            <button
+              className={tab === "credit-guide" ? "active" : ""}
+              data-testid="credit-guide-nav"
+              aria-current={tab === "credit-guide" ? "page" : undefined}
+              onClick={() => setTab("credit-guide")}
+              disabled={busy}
+            >
+              신용취약자금 안내
+            </button>
             <button onClick={() => setGuide(true)}>이용 안내</button>
             {!PUBLIC_SITE && user.role === "admin" && (
               <button
@@ -1705,10 +1724,17 @@ function App() {
             </button>
           </div>
         )}
-        {tab === "admin" && user.role === "admin" ? (
+        {tab === "credit-guide" ? (
+          <CreditGuide onBack={() => setTab("consult")} />
+        ) : tab === "admin" && user.role === "admin" ? (
           <Admin api={api} user={user} />
         ) : (
           <>
+            <button className="staff-guide-entry" data-testid="credit-guide-open" disabled={busy} onClick={() => setTab("credit-guide")}>
+              <span className="staff-guide-entry-icon"><Icon name="folder" size={22} /></span>
+              <span><strong>신용취약소상공인자금 한눈에 보기</strong><small>직원 참고자료 · 신청요건 · 필요서류 · 제한사항</small></span>
+              <Icon name="arrow" size={18} />
+            </button>
             <section className={`consult-intro${evaluation?.complete ? " is-result" : ""}`}>
               <div>
                 <h1>

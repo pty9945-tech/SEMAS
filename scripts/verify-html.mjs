@@ -159,6 +159,19 @@ try {
   await mkdir(resolve(root, 'artifacts'), { recursive: true });
   await page.screenshot({ path: resolve(root, 'artifacts/html-offline.png'), fullPage: true });
 
+  // The staff reference is included in this HTML and must not disturb an
+  // unfinished consultation or require an external document request.
+  await page.getByTestId('option-operations').click();
+  await page.getByTestId('credit-guide-open').click();
+  await expect(page.getByTestId('credit-guide')).toBeVisible();
+  await expect(page.getByTestId('credit-guide')).toContainText('839');
+  await page.getByTestId('credit-guide-search').fill('체납');
+  await expect(page.getByTestId('credit-guide')).toContainText('체납');
+  await page.getByTestId('credit-guide-back').click();
+  await expect(page.getByTestId('question-card')).toHaveAttribute('data-question-id', 'purpose');
+  await expect(page.getByTestId('option-operations')).toHaveAttribute('aria-pressed', 'true');
+  await assertPrivate(page, context);
+
   await walk(page);
   const results = page.getByTestId('results');
   await expect(results).toContainText('일반경영안정자금');
@@ -250,7 +263,7 @@ try {
     file: htmlPath,
     openingMode,
     offline: true,
-    checks: ['generated HTML launch', 'title and fund relations', 'normal result', 'copy text', 'print',
+    checks: ['generated HTML launch', 'title and fund relations', 'offline staff guide and retained consultation draft', 'normal result', 'copy text', 'print',
       'answer edit', 'single-choice auto advance and previous question from results', 'no matching funds', 'unknown answers', '390px mobile',
       'answers reset on document reload', 'no storage access, cookies, answer URLs, external requests, or page errors'],
     nativeClipboard,

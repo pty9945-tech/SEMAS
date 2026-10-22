@@ -1,0 +1,120 @@
+.credit-guide {
+  color: #2c493e;
+  padding: 5px 0 16px;
+  overflow-wrap: anywhere;
+}
+.credit-guide-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0 25px; }
+.credit-guide-toolbar button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 15px; border-radius: 10px; font-size: 13px; font-weight: 600; }
+.credit-guide-back { background: transparent; color: #426754; }
+.credit-guide-print { border: 1px solid #cbded2; background: #fff; color: #365e48; }
+.credit-guide-print:hover, .credit-guide-back:hover { background: #edf5ef; }
+.credit-guide-heading { margin-bottom: 20px; }
+.credit-guide-eyebrow { display: flex; align-items: center; gap: 8px; color: #4e7d65; font-size: 13px; font-weight: 650; margin-bottom: 10px; }
+.credit-guide h1 { font-size: clamp(25px, 3vw, 33px); line-height: 1.45; margin-bottom: 10px; }
+.credit-guide h1:focus { outline: none; }
+.credit-guide-subtitle { color: #586e62; line-height: 1.8; font-size: 14px; margin-bottom: 14px; max-width: 930px; }
+.credit-guide-dates { display: flex; flex-wrap: wrap; gap: 6px 16px; color: #60756a; font-size: 12px; }
+.credit-guide-notice { display: flex; align-items: flex-start; gap: 10px; padding: 16px 19px; background: #f1f7fa; border: 1px solid #dbe9ef; border-radius: 13px; color: #355b6b; margin: 0 0 19px; }
+.credit-guide-notice > svg { margin-top: 3px; }
+.credit-guide-notice strong { font-size: 13px; }
+.credit-guide-notice p { font-size: 12px; line-height: 1.8; margin: 5px 0 0; }
+.credit-guide-highlights { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 25px; }
+.credit-guide-highlight { padding: 18px 19px 14px; border: 1px solid #dce8df; border-radius: 15px; background: #fff; min-width: 0; }
+.credit-guide-highlight:nth-child(2n) { background: #f4f9f5; }
+.credit-guide-highlight > span { display: block; color: #587261; font-size: 12px; margin-bottom: 7px; }
+.credit-guide-highlight > strong { display: block; color: #315a43; font-size: 22px; line-height: 1.45; letter-spacing: -.035em; }
+.credit-guide-highlight > p { font-size: 12px; line-height: 1.75; color: #506a5b; margin: 7px 0 0; }
+.credit-highlight-source { margin-top: 8px; }
+.credit-highlight-source > summary { font-size: 11px; color: #5e7b68; cursor: pointer; }
+.credit-guide-finder { padding: 21px 23px 16px; border: 1px solid #d9e5dd; background: #fffefa; border-radius: 16px; margin-bottom: 26px; }
+.credit-guide-search-wrap { max-width: 580px; margin-bottom: 16px; }
+.credit-guide-search-wrap label { margin-bottom: 8px; font-size: 14px; color: #365643; }
+.credit-guide-search-field { display: flex; align-items: center; gap: 10px; border: 1px solid #ccdcd2; border-radius: 10px; background: #fff; padding: 0 12px; }
+.credit-guide-search-field:focus-within { outline: 2px solid #679b82; outline-offset: 2px; }
+.credit-guide-search-field > svg { color: #6f8e7b; }
+.credit-guide-search-field input { flex: 1; min-width: 0; width: auto; padding: 11px 0; min-height: 44px; border: 0; background: transparent; font-size: 14px; outline: none; box-shadow: none; }
+.credit-guide-search-field input::placeholder { color: #738779; }
+.credit-guide-search-field button { flex-shrink: 0; font-size: 12px; padding: 8px 4px; background: transparent; color: #4e705b; min-height: 36px; }
+.credit-guide-categories { display: flex; flex-wrap: wrap; gap: 7px; }
+.credit-guide-categories button { min-height: 38px; border: 1px solid #dae4db; border-radius: 9px; background: #fff; padding: 8px 13px; font-size: 13px; color: #536b5b; }
+.credit-guide-categories button[aria-pressed="true"] { background: #365f49; color: #fff; border-color: #365f49; font-weight: 650; }
+.credit-guide-categories button:hover { border-color: #799c86; }
+.credit-guide-search-status { color: #5c7365; font-size: 12px; line-height: 1.7; margin: 12px 0 0; }
+.credit-guide-section { border: 1px solid #e0e8df; border-radius: 17px; background: #fff; margin: 0 0 20px; padding: 23px; }
+.credit-guide-section[hidden], .credit-guide-item[hidden] { display: none; }
+.credit-guide-section-heading { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
+.credit-guide-section-number { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 32px; height: 32px; background: #eaf4ed; color: #487456; font-size: 12px; font-weight: 700; border-radius: 10px; }
+.credit-guide-section h2 { font-size: 20px; line-height: 1.5; margin: 0 0 4px; color: #2e513c; }
+.credit-guide-section-heading p { font-size: 13px; line-height: 1.8; margin: 0; color: #5b7363; }
+.credit-guide-items { border-top: 1px solid #e7eee7; }
+.credit-guide-item { border-bottom: 1px solid #e7eee7; }
+.credit-guide-item:last-child { border-bottom: 0; }
+.credit-guide-item > summary { list-style: none; cursor: pointer; display: flex; align-items: flex-start; gap: 18px; justify-content: space-between; padding: 15px 2px; }
+.credit-guide-item > summary::-webkit-details-marker { display: none; }
+.credit-guide-item > summary > svg { margin-top: 4px; color: #64856d; }
+.credit-guide-item[open] > summary > svg { transform: rotate(180deg); }
+.credit-guide-item-summary { min-width: 0; }
+.credit-guide-item-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 5px 8px; }
+.credit-guide-item-title > strong { font-size: 14px; line-height: 1.7; font-weight: 650; color: #344f3e; }
+.credit-guide-tag { font-size: 10px; line-height: 1.5; padding: 2px 6px; background: #eef4ef; color: #496d54; border-radius: 5px; font-weight: 550; }
+.credit-guide-item-description { display: block; font-size: 13px; color: #587061; line-height: 1.8; margin-top: 5px; }
+.credit-guide-item[open] > summary { padding-bottom: 10px; }
+.credit-guide-item-details { margin: 0 0 17px; padding: 15px 18px; background: #f7faf7; border-radius: 10px; }
+.credit-guide-item-details ul { padding-left: 18px; margin: 0; font-size: 13px; line-height: 1.9; color: #3d5b48; }
+.credit-guide-item-details li + li { margin-top: 7px; }
+.credit-guide-evidence { font-size: 11px; line-height: 1.8; color: #60766a; margin: 10px 0 0; }
+.credit-guide-evidence > strong { font-weight: 650; margin-right: 4px; }
+.credit-guide-evidence a { display: inline-flex; gap: 4px; align-items: center; margin-left: 6px; color: #416e57; }
+.credit-guide-empty { padding: 35px 20px; border: 1px dashed #cbdccf; border-radius: 14px; text-align: center; color: #59715f; background: #fff; margin-bottom: 22px; }
+.credit-guide-empty h2 { margin: 12px 0 8px; font-size: 20px; }
+.credit-guide-empty p { font-size: 13px; line-height: 1.8; margin-bottom: 15px; }
+.credit-guide-empty button { min-height: 42px; padding: 10px 15px; background: #e8f2eb; color: #3a6448; border-radius: 9px; font-size: 13px; }
+.credit-guide-sources { margin-top: 25px; padding: 20px 23px; border: 1px solid #e3e8de; background: #f4f7f0; border-radius: 14px; color: #536b59; }
+.credit-guide-sources h2 { font-size: 17px; margin-bottom: 10px; color: #405f47; }
+.credit-guide-sources > p, .credit-guide-sources > ul { font-size: 12px; line-height: 1.85; margin-bottom: 8px; }
+.credit-guide-sources > ul { padding-left: 17px; }
+.credit-guide-sources li + li { margin-top: 5px; }
+.credit-guide-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0; }
+.credit-guide-links a { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; border: 1px solid #ccdccc; background: #fff; color: #3d6a4c; padding: 8px 12px; font-size: 12px; text-decoration: none; border-radius: 9px; }
+.credit-guide-sources .credit-guide-print-note { font-size: 11px; color: #607766; margin: 0; }
+@media (max-width: 720px) {
+  .credit-guide-highlights { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .credit-guide-highlight { padding: 15px 13px 12px; }
+  .credit-guide-highlight > strong { font-size: 19px; }
+  .credit-guide-section, .credit-guide-finder, .credit-guide-sources { padding: 18px; }
+  .credit-guide-toolbar { margin-bottom: 20px; gap: 6px; }
+  .credit-guide-toolbar button { font-size: 12px; padding: 8px 9px; gap: 5px; }
+  .credit-guide-notice { padding: 14px; }
+  .credit-guide-section h2 { font-size: 18px; }
+  .credit-guide-item > summary { gap: 10px; }
+  .credit-guide-item-details { padding: 13px; }
+  .credit-guide-categories button { padding: 8px 10px; font-size: 12px; }
+}
+@media print {
+  body:has(.credit-guide) .app-version-info { display: none !important; }
+  .credit-guide { padding: 0; color: #111; font-size: 11px; }
+  .credit-guide-toolbar, .credit-guide-finder, .credit-guide-empty, .credit-guide-print-note { display: none !important; }
+  .credit-guide h1 { font-size: 22px; }
+  .credit-guide-heading { margin-bottom: 12px; }
+  .credit-guide-dates { font-size: 10px; color: #333; }
+  .credit-guide-highlights { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-bottom: 15px; }
+  .credit-guide-highlight { padding: 10px; break-inside: avoid; }
+  .credit-guide-highlight > strong { font-size: 16px; }
+  .credit-guide-section, .credit-guide-section[hidden] { display: block !important; padding: 13px; margin-bottom: 15px; }
+  .credit-guide-item, .credit-guide-item[hidden] { display: block !important; break-inside: avoid; }
+  .credit-guide-item > summary { padding: 10px 0; }
+  .credit-guide-item > summary > svg, .credit-highlight-source > summary { display: none; }
+  .credit-guide-item:not([open]) > .credit-guide-item-details, .credit-highlight-source:not([open]) > .credit-guide-evidence { display: block !important; }
+  .credit-guide details::details-content { content-visibility: visible !important; }
+  .credit-guide-item-details { margin-bottom: 10px; padding: 9px 12px; }
+  .credit-guide-item-details ul { font-size: 11px; }
+  .credit-guide-section h2 { font-size: 17px; }
+  .credit-guide-sources { padding: 13px; break-inside: avoid; }
+  .credit-guide-notice, .credit-guide-highlight, .credit-guide-item-details, .credit-guide-sources, .credit-guide-tag { background: #fff !important; color: #111 !important; border-color: #bbb; }
+  .credit-guide p, .credit-guide li, .credit-guide strong, .credit-guide span, .credit-guide h2, .credit-guide a { color: #222 !important; }
+  .credit-guide-evidence { font-size: 9px; }
+  .credit-guide-links { display: block; }
+  .credit-guide-links a { display: block; border: 0; padding: 4px 0; min-height: 0; font-size: 10px; }
+  .credit-guide-links a::after { content: " (" attr(href) ")"; }
+  .credit-guide-links svg { display: none; }
+}

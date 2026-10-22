@@ -43,6 +43,29 @@
 .consult-intro.is-result { display: none; }
 .question-card, .results { scroll-margin-top: 16px; }
 .result-toolbar { flex-wrap: wrap; }
+.staff-guide-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 14px 18px;
+  background: #f0f7fa;
+  border: 1px solid #d3e4ec;
+  border-radius: 14px;
+  color: #365c6b;
+}
+.staff-guide-entry-icon { display: grid; place-items: center; flex-shrink: 0; }
+.staff-guide-entry strong { display: block; font-size: 14px; line-height: 1.7; }
+.staff-guide-entry small { display: block; font-size: 12px; line-height: 1.7; color: #526d79; }
+.staff-guide-entry > svg { margin-left: auto; flex-shrink: 0; }
+.staff-guide-entry:hover { background: #e8f2f7; }
+.staff-guide-entry:focus-visible { outline: 2px solid #32654e; outline-offset: 3px; }
+.header-inner nav { gap: 22px; margin-left: 45px; }
+@media (min-width: 681px) and (max-width: 950px) {
+  .header-inner nav { gap: 10px; margin-left: 15px; }
+  .header-inner nav button { font-size: 12px; }
+}
 .app-version-info + .consult-intro.is-result { margin-bottom: 15px; }
 .app-version-info { margin-bottom: 14px; }
 .consult-intro h1 { font-size: 27px; margin-bottom: 7px; }
@@ -96,6 +119,7 @@
   .option-button .option-text strong { font-size: 14px; }
 }
 @media print {
+  .staff-guide-entry { display: none !important; }
   .app-version-info { font-size: 10px; margin: 0 0 12px; }
   .version-help, .offline-update-note { display: none; }
 }
